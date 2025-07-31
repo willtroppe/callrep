@@ -1,0 +1,675 @@
+body {
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+
+.card-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 10px 10px 0 0 !important;
+    border: none;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.representative-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.representative-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.representative-card h6 {
+    color: #007bff;
+    margin-bottom: 10px;
+}
+
+.phone-numbers {
+    margin-top: 10px;
+}
+
+.phone-number {
+    font-size: 1rem;
+    color: #28a745;
+    margin-bottom: 5px;
+}
+
+.phone-type {
+    font-weight: bold;
+    color: #495057;
+    margin-right: 5px;
+}
+
+.position-badge {
+    background-color: #6c757d;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-left: 10px;
+}
+
+.script-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.script-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.script-title {
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 10px;
+}
+
+.script-content {
+    color: #6c757d;
+    font-style: italic;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.form-control {
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+.modal-content {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .card-body {
+        padding: 15px;
+    }
+    
+    .representative-card {
+        padding: 10px;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    /* Stack form fields vertically on mobile */
+    .row .col-md-2 {
+        margin-bottom: 10px;
+    }
+    
+    .row .col-md-2 input,
+    .row .col-md-2 select {
+        width: 100%;
+    }
+}
+
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+}
+
+.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.alert {
+    border-radius: 8px;
+    border: none;
+}
+
+.success-message {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.call-step {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background-color: #f8f9fa;
+}
+
+.call-step h6 {
+    color: #007bff;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.call-step h6 i {
+    color: #6c757d;
+} 
+
+/* Selection Cards */
+.selection-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.selection-card.selected {
+    border-color: #28a745;
+    background-color: #d4edda;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+}
+
+.selection-card h6 {
+    color: #495057;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.selection-content {
+    min-height: 40px;
+}
+
+.selection-content p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.selection-content .selected-item {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.selection-content .selected-details {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Script Preview */
+.script-preview {
+    margin-top: 20px;
+}
+
+.script-preview h6 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Call Section */
+#callSection {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+#makeCallButton {
+    font-size: 1.2rem;
+    padding: 15px 30px;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+#makeCallButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+}
+
+#callInstructions {
+    font-size: 0.9rem;
+}
+
+/* Phone number selection highlighting */
+.phone-number.selected {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    padding-left: 15px;
+    margin-left: -15px;
+}
+
+.phone-number.selected a {
+    color: #155724;
+    font-weight: 600;
+}
+
+/* Step 4 representative card styling */
+#callSection .representative-card {
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: none;
+}
+
+#callSection .phone-number.selected {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 8px 12px;
+    margin: 0;
+    border-radius: 4px;
+}
+
+#callSection .phone-number.selected .phone-type,
+#callSection .phone-number.selected .phone-number {
+    color: #155724;
+    font-weight: 600;
+}
+
+/* Script card selection */
+.script-card.selected {
+    background-color: #d4edda;
+    border: 2px solid #28a745;
+}
+
+/* Representative card selection */
+.representative-card.selected {
+    background-color: #d4edda;
+    border: 2px solid #28a745;
+    border-radius: 8px;
+    padding: 15px;
+    margin: -15px;
+} 
+
+/* Call Info Cards */
+.call-info-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    height: 100%;
+}
+
+.call-info-card h6 {
+    color: #495057;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.call-info-content {
+    min-height: 40px;
+}
+
+.call-info-content p {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+.call-info-content .selected-info {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.call-info-content .selected-details {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+/* Full Script Display */
+.full-script-display {
+    margin-top: 20px;
+}
+
+.full-script-display h6 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Radio Button Styling */
+.phone-radio-group {
+    margin-top: 10px;
+}
+
+.phone-radio-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.phone-radio-item:hover {
+    background-color: #f8f9fa;
+}
+
+.phone-radio-item.selected {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.phone-radio-item input[type="radio"] {
+    margin-right: 10px;
+}
+
+.phone-radio-item label {
+    margin-bottom: 0;
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+/* Script Radio Styling */
+.script-radio-group {
+    margin-top: 10px;
+}
+.script-radio-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 12px;
+    margin-bottom: 8px;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.script-radio-item:hover {
+    background-color: #f8f9fa;
+}
+.script-radio-item.selected {
+    background-color: #d4edda;
+    border-color: #28a745;
+}
+
+.script-radio-content {
+    flex: 1;
+    margin-left: 10px;
+}
+
+.script-title {
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.script-preview {
+    color: #6c757d;
+    font-size: 0.9em;
+    line-height: 1.4;
+}
+
+.script-full {
+    color: #495057;
+    font-size: 0.9em;
+    line-height: 1.5;
+    margin-top: 8px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #007bff;
+}
+
+.script-radio-item .btn-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.8em;
+}
+
+.script-radio-item .btn-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Step 4 Script Display */
+.script-content-full {
+    font-family: inherit;
+    line-height: 1.6;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.script-content-full::-webkit-scrollbar {
+    width: 6px;
+}
+
+.script-content-full::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.script-content-full::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.script-content-full::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+} 
+
+/* Phone Checkbox Styling */
+.phone-checkbox-group {
+    margin-top: 10px;
+}
+
+.phone-checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.phone-checkbox-item:hover {
+    background-color: #f8f9fa;
+}
+
+.phone-checkbox-item.selected {
+    background-color: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.phone-checkbox-item input[type="checkbox"] {
+    margin-right: 10px;
+}
+
+.phone-checkbox-item label {
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
+/* Step 4 Representative Tiles */
+.selected-reps-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.representative-tile {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #f8f9fa;
+}
+
+.rep-header h6 {
+    color: #495057;
+    font-weight: 600;
+    margin: 0;
+}
+
+.phone-list {
+    margin-top: 10px;
+}
+
+.phone-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    background-color: white;
+    transition: all 0.2s ease;
+}
+
+.phone-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.phone-actions {
+    display: flex;
+    align-items: center;
+}
+
+/* Status Styling */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.status-active {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+.status-completed {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.phone-item.status-pending {
+    border-left: 4px solid #ffc107;
+}
+
+.phone-item.status-active {
+    border-left: 4px solid #17a2b8;
+    background-color: #f8f9fa;
+}
+
+.phone-item.status-completed {
+    border-left: 4px solid #28a745;
+    opacity: 0.8;
+}
+
+/* Scrollbar styling for selected reps container */
+.selected-reps-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.selected-reps-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.selected-reps-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.selected-reps-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+} 
+
+/* Chart sizing and layout */
+.chart-container {
+    height: 300px;
+    position: relative;
+}
+
+.chart-container canvas {
+    max-height: 300px !important;
+}
+
+/* Analytics specific styles */
+#outcomeChart, #dateChart, #repChart, #scriptChart {
+    max-height: 300px !important;
+}
+
+/* Make pie and doughnut charts more compact */
+.card-body canvas[data-chart-type="doughnut"],
+.card-body canvas[data-chart-type="pie"] {
+    max-height: 250px !important;
+} 
