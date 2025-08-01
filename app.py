@@ -4,11 +4,22 @@ from datetime import datetime, timezone
 import os
 import requests
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# OpenRouter API Configuration - DeepSeek V3 (FREE TIER ONLY)
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', 'your-openrouter-api-key-here')
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DEEPSEEK_FREE_MODEL = "deepseek/deepseek-chat-v3-0324:free"
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rep_contacts.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.jinja_env.cache = {}
 
 db = SQLAlchemy(app)
 
@@ -97,6 +108,7 @@ class CallLog(db.Model):
     # Metadata
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     session_id = db.Column(db.String(100))  # To group calls from same session
+    is_test_data = db.Column(db.Boolean, default=False)  # Flag for test/dummy data
     
     def to_dict(self):
         return {
@@ -111,7 +123,8 @@ class CallLog(db.Model):
             'script_id': self.script_id,
             'script_title': self.script_title,
             'created_at': self.created_at.isoformat(),
-            'session_id': self.session_id
+            'session_id': self.session_id,
+            'is_test_data': self.is_test_data
         }
 
 # Routes
@@ -129,7 +142,7 @@ def add_representative():
     data = request.json
     
     # Parse name into first and last
-    full_name = data['name'].strip()
+    full_name = data.get('name', data.get('representative_name', '')).strip()
     name_parts = full_name.split()
     
     if len(name_parts) >= 2:
@@ -208,7 +221,7 @@ def add_representative():
 @app.route('/api/representatives/<int:rep_id>', methods=['DELETE'])
 def delete_representative(rep_id):
     rep = Representative.query.get_or_404(rep_id)
-    rep.deleted_at = datetime.utcnow()
+    rep.deleted_at = datetime.now(timezone.utc)
     db.session.commit()
     return '', 204
 
@@ -240,7 +253,7 @@ def add_phone_to_representative(rep_id):
 @app.route('/api/representatives/<int:rep_id>/phones/<int:phone_id>', methods=['DELETE'])
 def delete_phone_number(rep_id, phone_id):
     phone = RepresentativePhone.query.filter_by(id=phone_id, representative_id=rep_id, deleted_at=None).first_or_404()
-    phone.deleted_at = datetime.utcnow()
+    phone.deleted_at = datetime.now(timezone.utc)
     db.session.commit()
     return '', 204
 
@@ -293,17 +306,118 @@ def generate_script():
         if not user_notes.strip():
             return jsonify({'error': 'Please provide some notes about what you want to discuss'}), 400
         
-        # Generate script locally (more reliable than API calls)
-        generated_script = generate_fallback_script(user_notes)
+        # Generate script using OpenRouter API ONLY
+        generated_result = generate_ai_script(user_notes)
         
         return jsonify({
-            'script': generated_script,
+            'script': generated_result['content'],
+            'title': generated_result['title'],
             'success': True,
-            'note': 'Generated using local AI system'
+            'note': 'Generated using DeepSeek V3 (FREE TIER) via OpenRouter'
         })
         
     except Exception as e:
-        return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+        return jsonify({'error': f'AI generation failed: {str(e)}'}), 500
+
+def generate_ai_script(notes):
+    """Generate a script using OpenRouter API with DeepSeek V3 (FREE TIER ONLY)"""
+    
+    if OPENROUTER_API_KEY == 'your-openrouter-api-key-here':
+        raise Exception("OpenRouter API key not configured")
+    
+    prompt = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
+
+User input: {notes}
+
+Please create a professional, polite, and effective phone call script that:
+1. Is conversational and natural-sounding
+2. Clearly states the issue/concern based on the user's input
+3. Makes a specific request or asks for action
+4. Is respectful and appreciative
+5. Does NOT solicit input from the representative (they are there to listen and take notes)
+6. Is 5-10 sentences long, depending on how much detail the user provided
+
+IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from [Zip Code] in [city]."
+
+Write only the script content, no additional formatting or explanations."""
+
+    headers = {
+        'Authorization': f'Bearer {OPENROUTER_API_KEY}',
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'http://localhost:8080',
+        'X-Title': 'Contact Your Representatives App'
+    }
+    
+    data = {
+        'model': DEEPSEEK_FREE_MODEL,
+        'messages': [
+            {
+                'role': 'user',
+                'content': prompt
+            }
+        ],
+        'max_tokens': 300,
+        'temperature': 0.7
+    }
+    
+    try:
+        response = requests.post(
+            f'{OPENROUTER_BASE_URL}/chat/completions',
+            headers=headers,
+            json=data,
+            timeout=30
+        )
+        
+        if response.status_code != 200:
+            raise Exception(f"OpenRouter API error: {response.status_code} - {response.text}")
+        
+        result = response.json()
+        script_content = result['choices'][0]['message']['content'].strip()
+        
+        # Generate a title based on the user's input
+        title_prompt = f"""Based on this user input: "{notes}"
+
+Generate a brief, professional title for a phone call script (3-8 words). The title should capture the main topic or issue.
+
+Write only the title, no additional text."""
+        
+        title_data = {
+            'model': DEEPSEEK_FREE_MODEL,
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': title_prompt
+                }
+            ],
+            'max_tokens': 50,
+            'temperature': 0.7
+        }
+        
+        title_response = requests.post(
+            f'{OPENROUTER_BASE_URL}/chat/completions',
+            headers=headers,
+            json=title_data,
+            timeout=30
+        )
+        
+        if title_response.status_code == 200:
+            title_result = title_response.json()
+            script_title = title_result['choices'][0]['message']['content'].strip()
+        else:
+            # Fallback title if API fails
+            script_title = f"Script about {notes[:30]}..."
+        
+        return {
+            'title': script_title,
+            'content': script_content
+        }
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Request exception: {e}")
+        raise Exception(f"Network error: {str(e)}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise
 
 def generate_fallback_script(notes):
     """Generate a sophisticated script locally using AI-like logic"""
@@ -409,7 +523,8 @@ def create_call_log():
         call_notes=data.get('call_notes', ''),
         script_id=data.get('script_id'),
         script_title=data.get('script_title', ''),
-        session_id=data.get('session_id', '')
+        session_id=data.get('session_id', ''),
+        is_test_data=data.get('is_test_data', False)
     )
     
     db.session.add(call_log)
@@ -424,6 +539,7 @@ def get_call_logs():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     outcome = request.args.get('outcome')
+    include_test_data = request.args.get('include_test_data', 'true').lower() == 'true'
     
     query = CallLog.query.filter_by(user_id=user_id)
     
@@ -437,6 +553,10 @@ def get_call_logs():
     
     if outcome:
         query = query.filter(CallLog.call_outcome == outcome)
+    
+    # Filter out test data unless explicitly requested
+    if not include_test_data:
+        query = query.filter(CallLog.is_test_data == False)
     
     # Order by most recent first
     call_logs = query.order_by(CallLog.call_datetime.desc()).all()
@@ -452,6 +572,7 @@ def get_call_stats():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     user_id = request.args.get('user_id', 'default_user')
+    include_test_data = request.args.get('include_test_data', 'true').lower() == 'true'
     
     query = CallLog.query.filter(CallLog.user_id == user_id)
     
@@ -459,6 +580,10 @@ def get_call_stats():
         query = query.filter(CallLog.call_datetime >= datetime.fromisoformat(start_date.replace('Z', '+00:00')))
     if end_date:
         query = query.filter(CallLog.call_datetime <= datetime.fromisoformat(end_date.replace('Z', '+00:00')))
+    
+    # Filter out test data unless explicitly requested
+    if not include_test_data:
+        query = query.filter(CallLog.is_test_data == False)
     
     call_logs = query.all()
     

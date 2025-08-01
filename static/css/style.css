@@ -6,6 +6,8 @@ body {
 .navbar-brand {
     font-weight: bold;
     font-size: 1.5rem;
+    word-wrap: break-word;
+    white-space: normal;
 }
 
 .card {
@@ -160,6 +162,38 @@ body {
     .row .col-md-2 input,
     .row .col-md-2 select {
         width: 100%;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+        line-height: 1.3;
+    }
+    
+    /* Fix script card layout on mobile */
+    .script-radio-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .script-radio-item .btn-outline-danger {
+        width: 100%;
+        margin-top: 10px;
+        margin-left: 0;
+    }
+    
+    .script-radio-content {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .script-actions {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .script-actions .btn {
+        font-size: 0.8rem;
+        padding: 4px 8px;
     }
 }
 

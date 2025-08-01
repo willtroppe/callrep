@@ -22,6 +22,12 @@ async function loadRepresentatives() {
         displayRepresentatives(representatives);
         loadScripts();
         
+        // Auto-populate the zip code field in Step 2
+        const newRepZipCode = document.getElementById('newRepZipCode');
+        if (newRepZipCode) {
+            newRepZipCode.value = zipCode;
+        }
+        
         // Show scripts section and call section
         document.getElementById('scriptsSection').style.display = 'block';
         showCallSection();
@@ -34,7 +40,6 @@ async function loadRepresentatives() {
 
 // Load representatives without requiring zip code (for initialization)
 async function loadInitialRepresentatives() {
-    console.log('loadInitialRepresentatives called');
     try {
         // Just clear the representatives list and show the add form
         document.getElementById('representativesList').innerHTML = `
@@ -43,6 +48,12 @@ async function loadInitialRepresentatives() {
                 Enter a zip code above to find your representatives, or add them manually below.
             </div>
         `;
+        
+        // Clear the zip code field in Step 2
+        const newRepZipCode = document.getElementById('newRepZipCode');
+        if (newRepZipCode) {
+            newRepZipCode.value = '';
+        }
     } catch (error) {
         console.error('Error in loadInitialRepresentatives:', error);
     }
@@ -100,12 +111,44 @@ function displayRepresentatives(representatives) {
             `;
         });
         
+        // Add inline phone form
+        html += `
+            <div class="add-phone-form mt-3" id="add-phone-form-${rep.id}" style="display: none;">
+                <div class="row g-2">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control form-control-sm" placeholder="Phone" id="new-phone-${rep.id}">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control form-control-sm" placeholder="Ext" id="new-extension-${rep.id}">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control form-control-sm" id="new-phone-type-${rep.id}">
+                            <option value="Main">Main</option>
+                            <option value="DC Office">DC Office</option>
+                            <option value="District Office">District Office</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-success btn-sm" onclick="addPhoneToRep(${rep.id})">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-secondary btn-sm" onclick="hideAddPhoneForm(${rep.id})">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
         html += `
                             </div>
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-success btn-sm" onclick="addPhoneToRepresentative('${rep.id}', '${rep.full_name}')">
+                        <button class="btn btn-outline-success btn-sm" onclick="showAddPhoneForm(${rep.id})">
                             <i class="fas fa-plus me-1"></i>
                             Add Phone
                         </button>
@@ -142,38 +185,95 @@ function addRepresentative() {
     
     const fullName = `${firstName} ${lastName}`;
     
+    // Collect phone numbers from the form
+    const phoneEntries = document.querySelectorAll('.phone-number-entry');
+    const phones = [];
+    
+    phoneEntries.forEach(entry => {
+        const phoneInput = entry.querySelector('[data-phone="phone"]');
+        const extensionInput = entry.querySelector('[data-phone="extension"]');
+        const typeSelect = entry.querySelector('[data-phone="type"]');
+        const customTypeInput = entry.querySelector('[data-phone="custom-type"]');
+        
+        const phone = phoneInput.value.trim();
+        const extension = extensionInput.value.trim();
+        let phoneType = typeSelect.value;
+        
+        // Handle custom phone type
+        if (phoneType === 'Other' && customTypeInput.style.display !== 'none') {
+            phoneType = customTypeInput.value.trim();
+        }
+        
+        if (phone) {
+            phones.push({
+                phone: phone,
+                extension: extension,
+                phone_type: phoneType
+            });
+        }
+    });
+    
+    // Get zip code from either Step 1 or the new input field
+    const step1ZipCode = document.getElementById('zipCode').value.trim();
+    const step2ZipCode = document.getElementById('newRepZipCode').value.trim();
+    const zipCode = step2ZipCode || step1ZipCode;
+    
+    if (!zipCode) {
+        alert('Please enter a zip code either in Step 1 or in the zip code field above.');
+        return;
+    }
+    
     fetch('/api/representatives', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
+            name: fullName,
             position: finalPosition,
-            zip_code: document.getElementById('zipCode').value
+            zip_code: zipCode,
+            phones: phones
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Clear form
-            document.getElementById('newRepFirstName').value = '';
-            document.getElementById('newRepLastName').value = '';
-            document.getElementById('newRepPosition').value = 'Senator';
-            document.getElementById('newRepCustomPosition').value = '';
-            document.getElementById('newRepCustomPosition').style.display = 'none';
-            
-            // Reload representatives
-            loadRepresentatives();
-            showAlert('Representative added successfully!', 'success');
-        } else {
-            showAlert('Error adding representative: ' + data.error, 'danger');
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
+        return response.json();
+    })
+    .then(data => {
+        // Clear form
+        document.getElementById('newRepFirstName').value = '';
+        document.getElementById('newRepLastName').value = '';
+        document.getElementById('newRepPosition').value = 'Senator';
+        document.getElementById('newRepCustomPosition').value = '';
+        document.getElementById('newRepCustomPosition').style.display = 'none';
+        document.getElementById('newRepZipCode').value = '';
+        
+        // Clear phone number fields
+        const phoneEntries = document.querySelectorAll('.phone-number-entry');
+        phoneEntries.forEach(entry => {
+            const phoneInput = entry.querySelector('[data-phone="phone"]');
+            const extensionInput = entry.querySelector('[data-phone="extension"]');
+            const typeSelect = entry.querySelector('[data-phone="type"]');
+            const customTypeInput = entry.querySelector('[data-phone="custom-type"]');
+            
+            if (phoneInput) phoneInput.value = '';
+            if (extensionInput) extensionInput.value = '';
+            if (typeSelect) typeSelect.value = 'Main';
+            if (customTypeInput) {
+                customTypeInput.value = '';
+                customTypeInput.style.display = 'none';
+            }
+        });
+        
+        // Reload representatives
+        loadRepresentatives();
+        showAlert('Representative added successfully!', 'success');
     })
     .catch(error => {
         console.error('Error:', error);
-        showAlert('Error adding representative. Please try again.', 'danger');
+        showAlert('Error adding representative: ' + error.message, 'danger');
     });
 }
 
@@ -242,93 +342,64 @@ function toggleCustomPhoneType(select) {
     }
 }
 
-// Add phone to representative
-function addPhoneToRepresentative(repId, repName) {
-    // Get all phone number entries
-    const phoneEntries = document.querySelectorAll('.phone-number-entry');
-    const phones = [];
+
+// Show add phone form for a representative
+function showAddPhoneForm(repId) {
+    const form = document.getElementById(`add-phone-form-${repId}`);
+    if (form) {
+        form.style.display = 'block';
+    }
+}
+
+// Hide add phone form for a representative
+function hideAddPhoneForm(repId) {
+    const form = document.getElementById(`add-phone-form-${repId}`);
+    if (form) {
+        form.style.display = 'none';
+        // Clear the form
+        document.getElementById(`new-phone-${repId}`).value = '';
+        document.getElementById(`new-extension-${repId}`).value = '';
+        document.getElementById(`new-phone-type-${repId}`).value = 'Main';
+    }
+}
+
+// Add phone to representative using inline form
+function addPhoneToRep(repId) {
+    const phone = document.getElementById(`new-phone-${repId}`).value.trim();
+    const extension = document.getElementById(`new-extension-${repId}`).value.trim();
+    const type = document.getElementById(`new-phone-type-${repId}`).value;
     
-    phoneEntries.forEach(entry => {
-        const phone = entry.querySelector('[data-phone="phone"]').value.trim();
-        const extension = entry.querySelector('[data-phone="extension"]').value.trim();
-        const type = entry.querySelector('[data-phone="type"]').value;
-        const customType = entry.querySelector('[data-phone="custom-type"]').value.trim();
-        
-        if (phone) {
-            const finalType = type === 'Other' ? customType : type;
-            if (type === 'Other' && !customType) {
-                showAlert('Please enter a custom phone type for all entries.', 'danger');
-                return;
-            }
-            
-            phones.push({
-                phone: phone,
-                extension: extension,
-                phone_type: finalType
-            });
-        }
-    });
-    
-    if (phones.length === 0) {
-        showAlert('Please enter at least one phone number.', 'danger');
+    if (!phone) {
+        showAlert('Please enter a phone number', 'danger');
         return;
     }
     
-    // Add each phone number
-    phones.forEach(phoneData => {
-        fetch('/api/representatives/' + repId + '/phones', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(phoneData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                showAlert('Error adding phone number: ' + data.error, 'danger');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showAlert('Error adding phone number. Please try again.', 'danger');
-        });
-    });
+    const phoneData = {
+        phone: phone,
+        extension: extension,
+        phone_type: type
+    };
     
-    // Clear phone number entries
-    const phoneList = document.getElementById('phoneNumbersList');
-    phoneList.innerHTML = `
-        <div class="phone-number-entry row mb-2">
-            <div class="col-md-3">
-                <input type="text" class="form-control" placeholder="Phone (any format)" data-phone="phone">
-            </div>
-            <div class="col-md-2">
-                <input type="text" class="form-control" placeholder="Extension" data-phone="extension">
-            </div>
-            <div class="col-md-3">
-                <select class="form-control" data-phone="type" onchange="toggleCustomPhoneType(this)">
-                    <option value="Main">Main</option>
-                    <option value="DC Office">DC Office</option>
-                    <option value="District Office">District Office</option>
-                    <option value="Other">Other</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <input type="text" class="form-control" placeholder="Custom Label" data-phone="custom-type" style="display: none;">
-            </div>
-            <div class="col-md-2">
-                <button class="btn btn-outline-danger btn-sm" onclick="removePhoneNumber(this)">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Reload representatives after a short delay
-    setTimeout(() => {
+    fetch('/api/representatives/' + repId + '/phones', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(phoneData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Hide the form
+        hideAddPhoneForm(repId);
+        
+        // Reload representatives
         loadRepresentatives();
-        showAlert('Phone numbers added successfully!', 'success');
-    }, 500);
+        showAlert('Phone number added successfully!', 'success');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error adding phone number. Please try again.', 'danger');
+    });
 }
 
 // Delete representative
@@ -337,18 +408,17 @@ function deleteRepresentative(repId) {
         fetch('/api/representatives/' + repId, {
             method: 'DELETE'
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+        .then(response => {
+            if (response.ok) {
                 loadRepresentatives();
                 showAlert('Representative deleted successfully!', 'success');
             } else {
-                showAlert('Error deleting representative: ' + data.error, 'danger');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showAlert('Error deleting representative. Please try again.', 'danger');
+            showAlert('Error deleting representative: ' + error.message, 'danger');
         });
     }
 }
@@ -359,29 +429,26 @@ function deletePhoneNumber(repId, phoneId) {
         fetch('/api/representatives/' + repId + '/phones/' + phoneId, {
             method: 'DELETE'
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
+        .then(response => {
+            if (response.ok) {
                 loadRepresentatives();
                 showAlert('Phone number deleted successfully!', 'success');
             } else {
-                showAlert('Error deleting phone number: ' + data.error, 'danger');
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            showAlert('Error deleting phone number. Please try again.', 'danger');
+            showAlert('Error deleting phone number: ' + error.message, 'danger');
         });
     }
 }
 
 // Load scripts (global)
 async function loadScripts() {
-    console.log('loadScripts called');
     try {
         const response = await fetch('/api/scripts');
         const scripts = await response.json();
-        console.log('Scripts loaded:', scripts);
         displayScripts(scripts);
     } catch (error) {
         console.error('Error loading scripts:', error);
@@ -652,15 +719,11 @@ function toggleFailureReason() {
 
 // Open call logging modal
 function openCallLogModal(repId, phoneIndex) {
-    console.log('openCallLogModal called with:', repId, phoneIndex);
-    
     const phone = selectedPhones.find(p => p.repId === repId && p.phoneIndex === phoneIndex);
     if (!phone) {
         console.error('Phone not found in openCallLogModal');
         return;
     }
-    
-    console.log('Found phone for modal:', phone);
     
     // Store current call info
     currentCallLog = {
@@ -702,13 +765,10 @@ function openCallLogModal(repId, phoneIndex) {
     
     toggleFailureReason();
     
-    console.log('Opening modal...');
-    
     // Open modal
     try {
         const modal = new bootstrap.Modal(modalElement);
         modal.show();
-        console.log('Modal should be open now');
     } catch (error) {
         console.error('Error opening modal:', error);
     }
@@ -740,7 +800,8 @@ function saveCallLog() {
         call_notes: combinedNotes,
         script_id: selectedCallScript ? selectedCallScript.id : null,
         script_title: selectedCallScript ? selectedCallScript.title : '',
-        session_id: sessionId
+        session_id: sessionId,
+        is_test_data: document.getElementById('isTestData').checked
     };
     
     fetch('/api/call-logs', {
@@ -751,22 +812,25 @@ function saveCallLog() {
         body: JSON.stringify(callLogData)
     })
     .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mark call as completed
-            phone.status = 'completed';
-            updateCallInfo();
-            
-            // Close modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('callLogModal'));
-            modal.hide();
-            
-            // Show success message
-            showAlert('Call logged successfully!', 'success');
-        } else {
-            showAlert('Error logging call: ' + data.error, 'danger');
-        }
-    })
+            .then(data => {
+            if (data.success) {
+                // Mark call as completed
+                phone.status = 'completed';
+                updateCallInfo();
+                
+                // Ensure script display is maintained
+                updateFullScriptDisplay();
+                
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('callLogModal'));
+                modal.hide();
+                
+                // Show success message
+                showAlert('Call logged successfully!', 'success');
+            } else {
+                showAlert('Error logging call: ' + data.error, 'danger');
+            }
+        })
     .catch(error => {
         console.error('Error:', error);
         showAlert('Error logging call. Please try again.', 'danger');
@@ -775,34 +839,28 @@ function saveCallLog() {
 
 // Load call analytics data
 function loadCallAnalytics() {
-    console.log('=== loadCallAnalytics called ===');
-    
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
     const outcomeFilter = document.getElementById('outcomeFilter').value;
-    
-    console.log('Filter values:', { startDate, endDate, outcomeFilter });
+    const includeTestData = document.getElementById('includeTestData').checked;
     
     // Convert dates to ISO format for API
     const startDateTime = startDate ? new Date(startDate + 'T00:00:00Z').toISOString() : '';
     const endDateTime = endDate ? new Date(endDate + 'T23:59:59Z').toISOString() : '';
-    
-    console.log('API date format:', { startDateTime, endDateTime });
     
     // Build query parameters
     const params = new URLSearchParams();
     if (startDateTime) params.append('start_date', startDateTime);
     if (endDateTime) params.append('end_date', endDateTime);
     if (outcomeFilter) params.append('outcome', outcomeFilter);
+    params.append('include_test_data', includeTestData.toString());
     
     const queryString = params.toString();
-    console.log('Query string:', queryString);
     
     // Fetch call logs
     fetch(`/api/call-logs?${queryString}`)
         .then(response => response.json())
         .then(data => {
-            console.log('Call logs received:', data);
             // Handle both direct array and wrapped object responses
             const callLogs = data.call_logs || data;
             displayCallLogs(callLogs);
@@ -815,7 +873,6 @@ function loadCallAnalytics() {
     fetch(`/api/call-logs/stats?${queryString}`)
         .then(response => response.json())
         .then(stats => {
-            console.log('Stats received:', stats);
             displayCallStats(stats);
         })
         .catch(error => {
@@ -825,8 +882,6 @@ function loadCallAnalytics() {
 
 // Display call statistics
 function displayCallStats(stats) {
-    console.log('displayCallStats called with:', stats);
-    
     // Populate statistics cards
     const statsContainer = document.getElementById('statsCards');
     statsContainer.innerHTML = `
@@ -864,11 +919,6 @@ function displayCallStats(stats) {
         </div>
     `;
     
-    console.log('About to create charts with data:', {
-        outcomeData: stats.calls_by_outcome,
-        dateData: stats.calls_by_date
-    });
-    
     // Create charts
     createOutcomeChart(stats.calls_by_outcome);
     createDateChart(stats.calls_by_date);
@@ -878,8 +928,6 @@ function displayCallStats(stats) {
 
 // Create outcome pie chart
 function createOutcomeChart(outcomeData) {
-    console.log('createOutcomeChart called with:', outcomeData);
-    
     const canvas = document.getElementById('outcomeChart');
     if (!canvas) {
         console.error('outcomeChart canvas not found!');
@@ -900,8 +948,6 @@ function createOutcomeChart(outcomeData) {
     const labels = Object.keys(outcomeData);
     const data = Object.values(outcomeData);
     const colors = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
-    
-    console.log('Chart data:', { labels, data, colors: colors.slice(0, labels.length) });
     
     try {
         window.outcomeChart = new Chart(ctx, {
@@ -929,7 +975,6 @@ function createOutcomeChart(outcomeData) {
                 }
             }
         });
-        console.log('Outcome chart created successfully');
     } catch (error) {
         console.error('Error creating outcome chart:', error);
     }
@@ -937,8 +982,6 @@ function createOutcomeChart(outcomeData) {
 
 // Create date line chart
 function createDateChart(dateData) {
-    console.log('createDateChart called with:', dateData);
-    
     const canvas = document.getElementById('dateChart');
     if (!canvas) {
         console.error('dateChart canvas not found!');
@@ -959,8 +1002,6 @@ function createDateChart(dateData) {
     // Sort dates
     const sortedDates = Object.keys(dateData).sort();
     const data = sortedDates.map(date => dateData[date]);
-    
-    console.log('Date chart data:', { sortedDates, data });
     
     try {
         window.dateChart = new Chart(ctx, {
@@ -995,7 +1036,6 @@ function createDateChart(dateData) {
                 }
             }
         });
-        console.log('Date chart created successfully');
     } catch (error) {
         console.error('Error creating date chart:', error);
     }
@@ -1003,8 +1043,6 @@ function createDateChart(dateData) {
 
 // Create representative bar chart
 function createRepChart(repData) {
-    console.log('createRepChart called with:', repData);
-    
     const canvas = document.getElementById('repChart');
     if (!canvas) {
         console.error('repChart canvas not found!');
@@ -1024,8 +1062,6 @@ function createRepChart(repData) {
     
     const labels = Object.keys(repData);
     const data = Object.values(repData);
-    
-    console.log('Rep chart data:', { labels, data });
     
     try {
         window.repChart = new Chart(ctx, {
@@ -1058,7 +1094,6 @@ function createRepChart(repData) {
                 }
             }
         });
-        console.log('Rep chart created successfully');
     } catch (error) {
         console.error('Error creating rep chart:', error);
     }
@@ -1066,8 +1101,6 @@ function createRepChart(repData) {
 
 // Create script pie chart
 function createScriptChart(scriptData) {
-    console.log('createScriptChart called with:', scriptData);
-    
     const canvas = document.getElementById('scriptChart');
     if (!canvas) {
         console.error('scriptChart canvas not found!');
@@ -1088,8 +1121,6 @@ function createScriptChart(scriptData) {
     const labels = Object.keys(scriptData);
     const data = Object.values(scriptData);
     const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
-    
-    console.log('Script chart data:', { labels, data, colors: colors.slice(0, labels.length) });
     
     try {
         window.scriptChart = new Chart(ctx, {
@@ -1117,7 +1148,6 @@ function createScriptChart(scriptData) {
                 }
             }
         });
-        console.log('Script chart created successfully');
     } catch (error) {
         console.error('Error creating script chart:', error);
     }
@@ -1133,8 +1163,11 @@ function displayCallLogs(callLogs) {
     }
     
     tbody.innerHTML = callLogs.map(log => `
-        <tr>
-            <td>${new Date(log.call_datetime).toLocaleString()}</td>
+        <tr class="${log.is_test_data ? 'table-warning' : ''}">
+            <td>
+                ${new Date(log.call_datetime).toLocaleString()}
+                ${log.is_test_data ? '<br><small class="text-warning"><i class="fas fa-flask"></i> Test Data</small>' : ''}
+            </td>
             <td>${log.representative_name}</td>
             <td>${log.phone_number}</td>
             <td>
@@ -1254,16 +1287,7 @@ function showCallSection() {
     document.getElementById('callSection').style.display = 'block';
 }
 
-// Test function to manually set a script (for debugging)
-function testScriptDisplay() {
-    console.log('Testing script display...');
-    selectedCallScript = {
-        id: 'test',
-        title: 'Test Script',
-        content: 'This is a test script content to see if the display works.'
-    };
-    updateCallInfo();
-}
+
 
 // Update call information display
 function updateCallInfo() {
@@ -1394,11 +1418,8 @@ function setPhoneActive(repId, phoneIndex) {
 
 // Complete a phone call
 function completePhoneCall(repId, phoneIndex) {
-    console.log('completePhoneCall called with:', repId, phoneIndex);
-    
     // Find the phone in selectedPhones
     const phone = selectedPhones.find(p => p.repId === repId && p.phoneIndex === phoneIndex);
-    console.log('Found phone:', phone);
     
     if (!phone) {
         console.error('Phone not found in selectedPhones');
@@ -1433,11 +1454,11 @@ function updateFullScriptDisplay() {
     }
     
     // Find or create the alert div inside fullScriptDisplay
-    let alertDiv = fullScriptDisplay.querySelector('.alert.alert-info');
+    let alertDiv = fullScriptDisplay.querySelector('.alert.alert-info.script-display');
     if (!alertDiv) {
         // Create the alert div if it doesn't exist
         alertDiv = document.createElement('div');
-        alertDiv.className = 'alert alert-info';
+        alertDiv.className = 'alert alert-info script-display';
         alertDiv.style.border = '2px solid #17a2b8';
         fullScriptDisplay.appendChild(alertDiv);
     }
@@ -1447,13 +1468,15 @@ function updateFullScriptDisplay() {
         const formattedContent = selectedCallScript.content.replace(/\n/g, '<br>');
         alertDiv.innerHTML = `
             <h6><strong>${selectedCallScript.title}</strong></h6>
-            <div class="script-content-full" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap;">
+            <div class="script-content-full" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap; text-align: left; padding-left: 0;">
                 ${formattedContent}
             </div>
         `;
     } else {
         alertDiv.innerHTML = '<p class="text-muted">Select a script above to see the content here</p>';
     }
+    
+
 }
 
 // Update call button
@@ -1476,15 +1499,15 @@ function updateCallButton() {
         let missingItems = [];
         if (!activePhone) missingItems.push('active phone number');
         if (!selectedCallScript) missingItems.push('script');
-        status.innerHTML = `Select a phone number and script above to enable calling (missing: ${missingItems.join(', ')})`;
+        status.innerHTML = `Select a phone number and script above to enable calling (missing: ${missingItems.join(', ')}). <i class="fas fa-heart me-2"></i> <strong>Your representative wants to hear your voice!</strong> I can't simulate that (yet), so you'll have to make the calls and read the script yourself. <strong>You've got this!</strong> Just follow the workflow above and speak clearly.`;
     }
 }
 
 // Show alert messages
 function showAlert(message, type) {
-    // Remove existing alerts
-    const existingAlerts = document.querySelectorAll('.alert');
-    existingAlerts.forEach(alert => alert.remove());
+    // Remove existing alert messages (but not script displays)
+    const existingAlertMessages = document.querySelectorAll('.alert-success, .alert-danger, .alert-warning, .alert-info:not(.script-display)');
+    existingAlertMessages.forEach(alert => alert.remove());
     
     const alertClass = type === 'success' ? 'alert-success success-message' : 'alert-danger error-message';
     const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
@@ -1518,6 +1541,15 @@ document.getElementById('zipCode').addEventListener('keypress', function(e) {
     }
 });
 
+// Update Step 2 zip code field when Step 1 zip code changes
+document.getElementById('zipCode').addEventListener('input', function(e) {
+    const step1ZipCode = e.target.value.trim();
+    const newRepZipCode = document.getElementById('newRepZipCode');
+    if (newRepZipCode && step1ZipCode) {
+        newRepZipCode.value = step1ZipCode;
+    }
+});
+
 // Handle Enter key in new representative form
 document.getElementById('newRepFirstName').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
@@ -1546,14 +1578,10 @@ document.getElementById('scriptTitle').addEventListener('keypress', function(e) 
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('=== DOMContentLoaded event fired ===');
-    console.log('Initializing application...');
     
     // Test if Chart.js is loaded
     if (typeof Chart === 'undefined') {
         console.error('Chart.js is not loaded!');
-    } else {
-        console.log('Chart.js is loaded successfully');
     }
     
     // Check if elements exist
@@ -1561,34 +1589,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const step3 = document.getElementById('step3');
     const step4 = document.getElementById('step4');
     
-    console.log('Step elements found:', {
-        step2: !!step2,
-        step3: !!step3,
-        step4: !!step4
-    });
-    
     // Show all steps from the beginning
     if (step2) step2.style.display = 'block';
     if (step3) step3.style.display = 'block';
     if (step4) step4.style.display = 'block';
     
-    console.log('Loading initial data...');
+    // Also show callSection (Step 4) by default
+    const callSection = document.getElementById('callSection');
+    if (callSection) {
+        callSection.style.display = 'block';
+    } else {
+        console.error('callSection not found!');
+    }
     
     // Load initial data
-    console.log('About to call loadInitialRepresentatives...');
     loadInitialRepresentatives();
-    
-    console.log('About to call loadScripts...');
     loadScripts();
     
     // Initialize session ID for call logging
     sessionId = generateSessionId();
     
+
+    
     // Set up analytics tab event listener
     const analyticsTab = document.querySelector('a[data-bs-toggle="tab"][href="#analytics"]');
     if (analyticsTab) {
         analyticsTab.addEventListener('click', function() {
-            console.log('Analytics tab clicked');
             loadCallAnalytics();
         });
     }
@@ -1603,8 +1629,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (startDateElement) startDateElement.value = startDate.toISOString().split('T')[0];
     if (endDateElement) endDateElement.value = endDate.toISOString().split('T')[0];
-    
-    console.log('=== Initialization complete ===');
 });
 
 // AI Script Generation Functions
@@ -1649,8 +1673,8 @@ function generateAIScript() {
     .then(data => {
         if (data.success) {
             // Show the script step with generated content
-            document.getElementById('generatedScriptContent').value = data.script;
-            document.getElementById('generatedScriptTitle').value = 'AI Generated Script';
+                            document.getElementById('generatedScriptContent').value = data.script;
+                document.getElementById('generatedScriptTitle').value = data.title || 'AI Generated Script';
             
             document.getElementById('aiNotesStep').style.display = 'none';
             document.getElementById('aiScriptStep').style.display = 'block';
@@ -1679,7 +1703,7 @@ function backToNotes() {
     document.getElementById('aiLoadingStep').style.display = 'none';
 }
 
-function saveGeneratedScript() {
+async function saveGeneratedScript() {
     const title = document.getElementById('generatedScriptTitle').value.trim();
     const content = document.getElementById('generatedScriptContent').value.trim();
     
@@ -1688,13 +1712,36 @@ function saveGeneratedScript() {
         return;
     }
     
-    // Save the script using the existing saveScript function
-    saveScript(title, content);
-    
-    // Close the modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('generateScriptModal'));
-    modal.hide();
-    
-    // Show success message
-    alert('Script saved successfully!');
+    try {
+        const response = await fetch('/api/scripts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                content: content
+            })
+        });
+        
+        if (response.ok) {
+            const newScript = await response.json();
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('generateScriptModal'));
+            modal.hide();
+            
+            // Show success message
+            alert('Script saved successfully!');
+            
+            // Reload scripts to show the new one
+            loadScripts();
+        } else {
+            alert('Error saving script. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error saving script:', error);
+        alert('Error saving script. Please try again.');
+    }
 } 
+
