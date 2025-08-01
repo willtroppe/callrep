@@ -311,18 +311,57 @@ def generate_script():
         if not user_notes.strip():
             return jsonify({'error': 'Please provide some notes about what you want to discuss'}), 400
         
-        # Generate script using OpenRouter API ONLY
-        generated_result = generate_ai_script(user_notes)
+        # Check if we're running locally (for development/demo)
+        is_localhost = request.headers.get('Host', '').startswith('localhost') or request.headers.get('Host', '').startswith('127.0.0.1')
         
-        return jsonify({
-            'script': generated_result['content'],
-            'title': generated_result['title'],
-            'success': True,
-            'note': 'Generated using DeepSeek V3 (FREE TIER) via OpenRouter'
-        })
+        if is_localhost:
+            # Local development - use actual AI generation
+            try:
+                generated_result = generate_ai_script(user_notes)
+                return jsonify({
+                    'script': generated_result['content'],
+                    'title': generated_result['title'],
+                    'success': True,
+                    'note': 'Generated using DeepSeek V3 (FREE TIER) via OpenRouter',
+                    'mode': 'local'
+                })
+            except Exception as e:
+                return jsonify({'error': f'AI generation failed: {str(e)}'}), 500
+        else:
+            # Production - provide external tool guidance
+            prompt_text = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
+
+User input: {user_notes}
+
+Please create a professional, polite, and effective phone call script that:
+1. Is conversational and natural-sounding
+2. Clearly states the issue/concern based on the user's input
+3. Makes a specific request or asks for action
+4. Is respectful and appreciative
+5. Does NOT solicit input from the representative (they are there to listen and take notes)
+6. Is 5-10 sentences long, depending on how much detail the user provided
+
+IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode."
+
+You can use these reference parameters in your script:
+- @RepType: Will be replaced with "Representative" or "Senator"
+- @LastName: Will be replaced with the representative's last name
+- @ZipCode: Will be replaced with the constituent's zip code
+
+Example: "I'm calling @RepType @LastName from @ZipCode to express my concern about..."
+
+Write only the script content, no additional formatting or explanations."""
+            
+            return jsonify({
+                'prompt': prompt_text,
+                'user_notes': user_notes,
+                'success': True,
+                'mode': 'external',
+                'note': 'Use external AI tool - copy the prompt below and paste into ChatGPT or similar'
+            })
         
     except Exception as e:
-        return jsonify({'error': f'AI generation failed: {str(e)}'}), 500
+        return jsonify({'error': f'Request failed: {str(e)}'}), 500
 
 def generate_ai_script(notes):
     """Generate a script using OpenRouter API with DeepSeek V3 (FREE TIER ONLY)"""

@@ -1711,13 +1711,18 @@ function generateAIScript() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Show the script step with generated content
-                            document.getElementById('generatedScriptContent').value = data.script;
+            if (data.mode === 'local') {
+                // Local mode - show generated script directly
+                document.getElementById('generatedScriptContent').value = data.script;
                 document.getElementById('generatedScriptTitle').value = data.title || 'AI Generated Script';
-            
-            document.getElementById('aiNotesStep').style.display = 'none';
-            document.getElementById('aiScriptStep').style.display = 'block';
-            document.getElementById('aiLoadingStep').style.display = 'none';
+                
+                document.getElementById('aiNotesStep').style.display = 'none';
+                document.getElementById('aiScriptStep').style.display = 'block';
+                document.getElementById('aiLoadingStep').style.display = 'none';
+            } else {
+                // External mode - show prompt for external AI tool
+                showExternalAIPrompt(data.prompt, data.user_notes);
+            }
         } else {
             alert('Error generating script: ' + (data.error || 'Unknown error'));
             // Go back to notes step
@@ -1736,10 +1741,136 @@ function generateAIScript() {
     });
 }
 
+function showExternalAIPrompt(prompt, userNotes) {
+    // Create the external AI prompt step
+    const modalBody = document.querySelector('#generateScriptModal .modal-body');
+    
+    // Hide all existing steps
+    document.getElementById('aiNotesStep').style.display = 'none';
+    document.getElementById('aiScriptStep').style.display = 'none';
+    document.getElementById('aiLoadingStep').style.display = 'none';
+    
+    // Create external AI step if it doesn't exist
+    let externalStep = document.getElementById('aiExternalStep');
+    if (!externalStep) {
+        externalStep = document.createElement('div');
+        externalStep.id = 'aiExternalStep';
+        modalBody.appendChild(externalStep);
+    }
+    
+    externalStep.innerHTML = `
+        <div class="text-center mb-4">
+            <i class="fas fa-robot fa-3x text-primary mb-3"></i>
+            <h5>Use External AI Tool</h5>
+            <p class="text-muted">Copy the prompt below and paste it into ChatGPT or another AI tool, then copy the response back here.</p>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label"><strong>Your Notes:</strong></label>
+            <div class="alert alert-info">
+                ${userNotes}
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label"><strong>AI Prompt to Copy:</strong></label>
+            <div class="d-flex gap-2 mb-2">
+                <button class="btn btn-outline-primary btn-sm" onclick="copyToClipboard('aiPrompt')">
+                    <i class="fas fa-copy me-1"></i>Copy Prompt
+                </button>
+                <a href="https://chat.openai.com" target="_blank" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-external-link-alt me-1"></i>Open ChatGPT
+                </a>
+            </div>
+            <textarea class="form-control" id="aiPrompt" rows="8" readonly>${prompt}</textarea>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label"><strong>Paste AI Response Here:</strong></label>
+            <textarea class="form-control" id="aiResponse" rows="6" placeholder="Paste the AI-generated script here..."></textarea>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label"><strong>Script Title:</strong></label>
+            <input type="text" class="form-control" id="externalScriptTitle" placeholder="Enter a title for your script">
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" onclick="backToNotes()">
+                <i class="fas fa-arrow-left me-2"></i>Back to Notes
+            </button>
+            <button type="button" class="btn btn-success" onclick="saveExternalScript()">
+                <i class="fas fa-save me-2"></i>Save Script
+            </button>
+        </div>
+    `;
+    
+    externalStep.style.display = 'block';
+}
+
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999); // For mobile devices
+    document.execCommand('copy');
+    
+    // Show feedback
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+    setTimeout(() => {
+        button.innerHTML = originalText;
+    }, 2000);
+}
+
+function saveExternalScript() {
+    const title = document.getElementById('externalScriptTitle').value.trim();
+    const content = document.getElementById('aiResponse').value.trim();
+    
+    if (!title || !content) {
+        alert('Please enter both a title and content for the script.');
+        return;
+    }
+    
+    // Save the script
+    fetch('/api/scripts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            title: title,
+            content: content
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Close the modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('generateScriptModal'));
+        modal.hide();
+        
+        // Show success message
+        alert('Script saved successfully!');
+        
+        // Reload scripts to show the new one
+        loadScripts();
+    })
+    .catch(error => {
+        console.error('Error saving script:', error);
+        alert('Error saving script. Please try again.');
+    });
+}
+
 function backToNotes() {
     document.getElementById('aiNotesStep').style.display = 'block';
     document.getElementById('aiScriptStep').style.display = 'none';
     document.getElementById('aiLoadingStep').style.display = 'none';
+    
+    // Hide external step if it exists
+    const externalStep = document.getElementById('aiExternalStep');
+    if (externalStep) {
+        externalStep.style.display = 'none';
+    }
 }
 
 async function saveGeneratedScript() {
