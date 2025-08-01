@@ -21,6 +21,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.jinja_env.cache = {}
 
+# Reduce logging verbosity
+import logging
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
+
 db = SQLAlchemy(app)
 
 # Database Models
@@ -337,7 +342,14 @@ Please create a professional, polite, and effective phone call script that:
 5. Does NOT solicit input from the representative (they are there to listen and take notes)
 6. Is 5-10 sentences long, depending on how much detail the user provided
 
-IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from [Zip Code] in [city]."
+IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode."
+
+You can use these reference parameters in your script:
+- @RepType: Will be replaced with "Representative" or "Senator"
+- @LastName: Will be replaced with the representative's last name
+- @ZipCode: Will be replaced with the constituent's zip code
+
+Example: "I'm calling @RepType @LastName from @ZipCode to express my concern about..."
 
 Write only the script content, no additional formatting or explanations."""
 

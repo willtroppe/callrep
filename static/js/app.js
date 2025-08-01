@@ -98,7 +98,7 @@ function displayRepresentatives(representatives) {
             html += `
                 <div class="phone-checkbox-item" id="phone-${rep.id}-${index}">
                     <input type="checkbox" id="radio-${rep.id}-${index}" 
-                           value="${rep.id}-${index}" onchange="selectPhoneNumber('${rep.id}', ${index}, '${rep.full_name}', '${phone.display_phone}', '${phone.phone_type}', '${phone.phone_link}')">
+                           value="${rep.id}-${index}" onchange="selectPhoneNumber('${rep.id}', ${index}, '${rep.full_name}', '${phone.display_phone}', '${phone.phone_type}', '${phone.phone_link}', '${rep.display_position}')">
                     <label for="radio-${rep.id}-${index}">
                         <i class="fas fa-phone me-2"></i>
                         <span class="phone-type">${phone.phone_type}:</span>
@@ -475,9 +475,11 @@ function displayScripts(scripts) {
     let html = '<div class="script-radio-group">';
 
     scripts.forEach(script => {
-        const previewText = script.content.length > 100 ? 
-            script.content.substring(0, 100) + '...' : 
-            script.content;
+        // Process reference parameters for preview (using current zip code only)
+        const processedContent = processScriptReferences(script.content);
+        const previewText = processedContent.length > 100 ? 
+            processedContent.substring(0, 100) + '...' : 
+            processedContent;
         
         html += `
             <div class="script-radio-item" id="script-${script.id}">
@@ -486,7 +488,7 @@ function displayScripts(scripts) {
                 <div class="script-radio-content">
                     <div class="script-title">${script.title}</div>
                     <div class="script-preview" id="preview-${script.id}">${previewText}</div>
-                    <div class="script-full" id="full-${script.id}" style="display: none;">${script.content.replace(/\n/g, '<br>')}</div>
+                    <div class="script-full" id="full-${script.id}" style="display: none;">${processedContent.replace(/\n/g, '<br>')}</div>
                     <div class="script-actions mt-2">
                         <button class="btn btn-link btn-sm p-0 me-3" onclick="toggleScriptExpand(${script.id})" id="toggle-${script.id}">
                             <i class="fas fa-chevron-down"></i> Show more
@@ -1239,12 +1241,13 @@ function deselectAllPhones() {
 }
 
 // Handle phone number selection (now supports multiple selections)
-function selectPhoneNumber(repId, phoneIndex, repName, phoneNumber, phoneType, phoneLink) {
+function selectPhoneNumber(repId, phoneIndex, repName, phoneNumber, phoneType, phoneLink, repPosition) {
     const phoneKey = `${repId}-${phoneIndex}`;
     const phoneData = {
         repId: repId,
         phoneIndex: phoneIndex,
         repName: repName,
+        repPosition: repPosition,
         display_phone: phoneNumber,
         phone_link: phoneLink,
         phone_type: phoneType,
@@ -1309,6 +1312,7 @@ function updateCallRepInfo() {
             if (!repsByPhone[phone.repId]) {
                 repsByPhone[phone.repId] = {
                     repName: phone.repName,
+                    repPosition: phone.repPosition,
                     phones: []
                 };
             }
@@ -1321,7 +1325,7 @@ function updateCallRepInfo() {
             html += `
                 <div class="representative-tile mb-3">
                     <div class="rep-header">
-                        <h6 class="mb-2">${rep.repName}</h6>
+                        <h6 class="mb-2">${rep.repName} <span class="position-badge">${rep.repPosition}</span></h6>
                     </div>
                     <div class="phone-list">
             `;
@@ -1439,6 +1443,33 @@ function resetPhoneCall(repId, phoneIndex) {
     }
 }
 
+// Process reference parameters in script content
+function processScriptReferences(scriptContent, activePhone = null) {
+    if (!scriptContent) return scriptContent;
+    
+    let processedContent = scriptContent;
+    
+    // Get current zip code
+    const zipCode = document.getElementById('zipCode').value || 'Not set';
+    
+    if (activePhone) {
+        // Extract last name from representative name
+        const repNameParts = activePhone.repName.split(' ');
+        const lastName = repNameParts[repNameParts.length - 1] || activePhone.repName;
+        
+        // Replace reference parameters
+        processedContent = processedContent
+            .replace(/@RepType/g, activePhone.repPosition)
+            .replace(/@LastName/g, lastName)
+            .replace(/@ZipCode/g, zipCode);
+    } else {
+        // If no active phone, just replace zip code
+        processedContent = processedContent.replace(/@ZipCode/g, zipCode);
+    }
+    
+    return processedContent;
+}
+
 // Update full script display in Step 4
 function updateFullScriptDisplay() {
     // Make sure Step 4 is visible
@@ -1453,6 +1484,8 @@ function updateFullScriptDisplay() {
         return;
     }
     
+
+    
     // Find or create the alert div inside fullScriptDisplay
     let alertDiv = fullScriptDisplay.querySelector('.alert.alert-info.script-display');
     if (!alertDiv) {
@@ -1464,8 +1497,14 @@ function updateFullScriptDisplay() {
     }
     
     if (selectedCallScript) {
+        // Get the active phone for reference parameter processing
+        const activePhone = selectedPhones.find(p => p.status === 'active');
+        
+        // Process reference parameters in the script content
+        const processedContent = processScriptReferences(selectedCallScript.content, activePhone);
+        
         // Show the complete script with line breaks preserved
-        const formattedContent = selectedCallScript.content.replace(/\n/g, '<br>');
+        const formattedContent = processedContent.replace(/\n/g, '<br>');
         alertDiv.innerHTML = `
             <h6><strong>${selectedCallScript.title}</strong></h6>
             <div class="script-content-full" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap; text-align: left; padding-left: 0;">

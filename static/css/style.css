@@ -581,8 +581,7 @@ body {
 
 /* Step 4 Representative Tiles */
 .selected-reps-container {
-    max-height: 400px;
-    overflow-y: auto;
+    /* Removed max-height constraint to show all reps at once */
 }
 
 .representative-tile {
