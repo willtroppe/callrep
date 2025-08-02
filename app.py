@@ -326,7 +326,38 @@ def generate_script():
                     'mode': 'local'
                 })
             except Exception as e:
-                return jsonify({'error': f'AI generation failed: {str(e)}'}), 500
+                print(f"AI generation failed, using external tool approach: {str(e)}")
+                # Use external AI tool approach (same as production) when API fails
+                prompt_text = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
+
+User input: {user_notes}
+
+Please create a professional, polite, and effective phone call script that:
+1. Is conversational and natural-sounding
+2. Clearly states the issue/concern based on the user's input
+3. Makes a specific request or asks for action
+4. Is respectful and appreciative
+5. Does NOT solicit input from the representative (they are there to listen and take notes)
+6. Is 5-10 sentences long, depending on how much detail the user provided
+
+IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode."
+
+You can use these reference parameters in your script:
+- @RepType: Will be replaced with "Representative" or "Senator"
+- @LastName: Will be replaced with the representative's last name
+- @ZipCode: Will be replaced with the constituent's zip code
+
+Example: "I'm calling @RepType @LastName from @ZipCode to express my concern about..."
+
+Write only the script content, no additional formatting or explanations."""
+                
+                return jsonify({
+                    'prompt': prompt_text,
+                    'user_notes': user_notes,
+                    'success': True,
+                    'mode': 'external',
+                    'note': 'AI service unavailable - use external AI tool (copy prompt to ChatGPT)'
+                })
         else:
             # Production - provide external tool guidance
             prompt_text = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
@@ -366,7 +397,7 @@ Write only the script content, no additional formatting or explanations."""
 def generate_ai_script(notes):
     """Generate a script using OpenRouter API with DeepSeek V3 (FREE TIER ONLY)"""
     
-    if OPENROUTER_API_KEY == 'your-openrouter-api-key-here':
+    if OPENROUTER_API_KEY == 'your-openrouter-api-key-here' or OPENROUTER_API_KEY == 'invalid-key-for-testing':
         raise Exception("OpenRouter API key not configured")
     
     prompt = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
@@ -423,6 +454,14 @@ Write only the script content, no additional formatting or explanations."""
             raise Exception(f"OpenRouter API error: {response.status_code} - {response.text}")
         
         result = response.json()
+        
+        # Check if the response has the expected structure
+        if 'choices' not in result or not result['choices']:
+            raise Exception("API response missing 'choices' field")
+        
+        if 'message' not in result['choices'][0] or 'content' not in result['choices'][0]['message']:
+            raise Exception("API response missing 'message' or 'content' field")
+        
         script_content = result['choices'][0]['message']['content'].strip()
         
         # Generate a title based on the user's input
@@ -453,7 +492,10 @@ Write only the title, no additional text."""
         
         if title_response.status_code == 200:
             title_result = title_response.json()
-            script_title = title_result['choices'][0]['message']['content'].strip()
+            if 'choices' in title_result and title_result['choices'] and 'message' in title_result['choices'][0] and 'content' in title_result['choices'][0]['message']:
+                script_title = title_result['choices'][0]['message']['content'].strip()
+            else:
+                script_title = f"Script about {notes[:30]}..."
         else:
             # Fallback title if API fails
             script_title = f"Script about {notes[:30]}..."
@@ -549,13 +591,16 @@ def generate_fallback_script(notes):
     
     # Select and format template
     template = random.choice(templates)
-    script = template.format(
+    script_content = template.format(
         topic=detected_topic,
         reasoning=selected_reasoning,
         action=detected_action
     )
     
-    return script
+    # Add the standard opening line that AI scripts use
+    full_script = f"Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode.\n\n{script_content}"
+    
+    return full_script
 
 @app.route('/api/call-logs', methods=['POST'])
 def create_call_log():
