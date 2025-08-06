@@ -1657,10 +1657,12 @@ function updateFullScriptDisplay() {
     // Find the fullScriptDisplay div
     const fullScriptDisplay = document.getElementById('fullScriptDisplay');
     if (!fullScriptDisplay) {
+        console.error('fullScriptDisplay not found');
         return;
     }
     
-
+    // Ensure the script display section is always visible
+    fullScriptDisplay.style.display = 'block';
     
     // Find or create the alert div inside fullScriptDisplay
     let alertDiv = fullScriptDisplay.querySelector('.alert.alert-info.script-display');
@@ -1693,11 +1695,13 @@ function updateFullScriptDisplay() {
                 ${formattedContent}
             </div>
         `;
+        
+        // Ensure the alert div is visible
+        alertDiv.style.display = 'block';
     } else {
         alertDiv.innerHTML = '<p class="text-muted">Select a script above to see the content here</p>';
+        alertDiv.style.display = 'block';
     }
-    
-
 }
 
 // Update call button
@@ -2230,6 +2234,9 @@ function startCurrentCall() {
         phoneInSelected.status = 'active';
     }
     
+    // Ensure script display is maintained
+    updateFullScriptDisplay();
+    
     updateNextCallWorkflow();
     updateCallInfo(); // Update the main rep list to show real-time status
 }
@@ -2239,6 +2246,10 @@ function completeCurrentCall() {
     if (currentCallIndex >= callQueue.length) return;
     
     const currentCall = callQueue[currentCallIndex];
+    
+    // Ensure script display is maintained before opening modal
+    updateFullScriptDisplay();
+    
     openCallLogModal(currentCall.repId, currentCall.phoneIndex);
 }
 
@@ -2360,6 +2371,9 @@ function saveCallLogStreamlined() {
             
             // Show success message
             showAlert('Call logged successfully!', 'success');
+            
+            // Ensure script display is maintained
+            updateFullScriptDisplay();
             
             // Automatically move to next call after a short delay
             setTimeout(() => {
