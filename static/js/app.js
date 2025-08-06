@@ -1673,11 +1673,17 @@ function updateFullScriptDisplay() {
     }
     
     if (selectedCallScript) {
-        // Get the active phone for reference parameter processing
-        const activePhone = selectedPhones.find(p => p.status === 'active');
+        // Get the current call from the queue for reference parameter processing
+        let currentPhone = null;
+        if (callQueue.length > 0 && currentCallIndex < callQueue.length) {
+            currentPhone = callQueue[currentCallIndex];
+        } else {
+            // Fallback to active phone if no queue
+            currentPhone = selectedPhones.find(p => p.status === 'active');
+        }
         
         // Process reference parameters in the script content
-        const processedContent = processScriptReferences(selectedCallScript.content, activePhone);
+        const processedContent = processScriptReferences(selectedCallScript.content, currentPhone);
         
         // Show the complete script with line breaks preserved
         const formattedContent = processedContent.replace(/\n/g, '<br>');
@@ -2147,11 +2153,8 @@ function startStreamlinedWorkflow() {
     
     currentCallIndex = 0;
     
-    // Immediately update the script with rep info for the first call
-    if (callQueue.length > 0) {
-        const firstCall = callQueue[0];
-        // Script is already displayed above - no need to duplicate
-    }
+    // Update script display with first call information
+    updateFullScriptDisplay();
     
     showNextCallWorkflow();
     updateNextCallWorkflow();
@@ -2260,7 +2263,8 @@ function nextCall() {
         phoneInSelected.status = 'pending';
     }
     
-    // No need to duplicate script - user can read from existing display above
+    // Update script display with current call information
+    updateFullScriptDisplay();
     
     updateNextCallWorkflow();
     updateCallInfo(); // Update the main rep list to show real-time status
