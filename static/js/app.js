@@ -1648,6 +1648,11 @@ function processScriptReferences(scriptContent, activePhone = null) {
 
 // Update full script display in Step 4
 function updateFullScriptDisplay() {
+    console.log('updateFullScriptDisplay called');
+    console.log('selectedCallScript:', selectedCallScript);
+    console.log('callQueue.length:', callQueue.length);
+    console.log('currentCallIndex:', currentCallIndex);
+    
     // Make sure Step 4 is visible
     const callSection = document.getElementById('callSection');
     if (callSection) {
@@ -1701,6 +1706,18 @@ function updateFullScriptDisplay() {
     } else {
         alertDiv.innerHTML = '<p class="text-muted">Select a script above to see the content here</p>';
         alertDiv.style.display = 'block';
+    }
+    
+    // Set up a periodic check to ensure script display stays visible
+    if (selectedCallScript && callQueue.length > 0) {
+        setTimeout(() => {
+            const scriptDisplay = document.getElementById('fullScriptDisplay');
+            if (scriptDisplay && scriptDisplay.style.display === 'none') {
+                console.log('Script display was hidden, restoring...');
+                scriptDisplay.style.display = 'block';
+                updateFullScriptDisplay();
+            }
+        }, 2000);
     }
 }
 
@@ -2378,6 +2395,10 @@ function saveCallLogStreamlined() {
             // Automatically move to next call after a short delay
             setTimeout(() => {
                 nextCall();
+                // Ensure script display is maintained after nextCall
+                setTimeout(() => {
+                    updateFullScriptDisplay();
+                }, 100);
             }, 1500);
             
         } else {
