@@ -698,6 +698,8 @@ let selectedPhones = []; // Array to store all selected phone numbers
 let sessionId = generateSessionId(); // Unique session ID for call logging
 let currentCallLog = null; // Current call being logged
 let editingScriptId = null;
+let currentCallIndex = 0; // Index of current call in the queue
+let callQueue = []; // Array of pending calls
 
 // Generate a unique session ID
 function generateSessionId() {
@@ -766,6 +768,20 @@ function openCallLogModal(repId, phoneIndex) {
     if (callNotesElement) callNotesElement.value = '';
     
     toggleFailureReason();
+    
+    // Check if we're in streamlined workflow mode
+    const isStreamlinedMode = callQueue.length > 0 && currentCallIndex < callQueue.length;
+    const saveButton = document.getElementById('callLogModal').querySelector('button[onclick="saveCallLog()"]');
+    
+    if (isStreamlinedMode) {
+        // Use streamlined workflow
+        saveButton.onclick = saveCallLogStreamlined;
+        saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save & Continue';
+    } else {
+        // Use regular workflow
+        saveButton.onclick = saveCallLog;
+        saveButton.innerHTML = '<i class="fas fa-save me-2"></i>Save Call Log';
+    }
     
     // Open modal
     try {
@@ -1294,9 +1310,11 @@ function showCallSection() {
 
 // Update call information display
 function updateCallInfo() {
+    // Always update the main rep list to show real-time status
     updateCallRepInfo();
     updateFullScriptDisplay();
     updateCallButton();
+    updateNextCallWorkflow();
 }
 
 // Update representative info in Step 4 using same tile as Step 2
@@ -1521,24 +1539,50 @@ function updateFullScriptDisplay() {
 // Update call button
 function updateCallButton() {
     const callButton = document.getElementById('makeCallButton');
+    const workflowButton = document.getElementById('startWorkflowButton');
     const status = document.getElementById('callReadyStatus');
 
-    // Find the active phone (the one currently being called)
-    const activePhone = selectedPhones.find(p => p.status === 'active');
+    // Check if we have multiple pending calls
+    const pendingCalls = selectedPhones.filter(p => p.status === 'pending');
+    const hasMultipleCalls = pendingCalls.length > 1;
+    const hasActiveCall = selectedPhones.find(p => p.status === 'active');
     
-    if (activePhone && selectedCallScript) {
-        callButton.style.display = 'inline-block';
-        callButton.href = `tel:${activePhone.phone_link}`;
-        status.innerHTML = `
-            <i class="fas fa-check-circle text-success me-2"></i>
-            Ready to call ${activePhone.repName} at ${activePhone.display_phone}!
-        `;
+    if (selectedPhones.length > 0 && selectedCallScript) {
+        if (hasMultipleCalls && !hasActiveCall) {
+            // Show workflow button for multiple calls
+            workflowButton.style.display = 'inline-block';
+            callButton.style.display = 'none';
+            status.innerHTML = `
+                <i class="fas fa-check-circle text-success me-2"></i>
+                Ready to make ${selectedPhones.length} calls! Use the streamlined workflow for the best experience.
+            `;
+        } else if (hasActiveCall) {
+            // Show regular call button for single active call
+            workflowButton.style.display = 'none';
+            callButton.style.display = 'inline-block';
+            callButton.href = `tel:${hasActiveCall.phone_link}`;
+            status.innerHTML = `
+                <i class="fas fa-check-circle text-success me-2"></i>
+                Ready to call ${hasActiveCall.repName} at ${hasActiveCall.display_phone}!
+            `;
+        } else {
+            // Single pending call
+            workflowButton.style.display = 'none';
+            callButton.style.display = 'inline-block';
+            const singleCall = pendingCalls[0];
+            callButton.href = `tel:${singleCall.phone_link}`;
+            status.innerHTML = `
+                <i class="fas fa-check-circle text-success me-2"></i>
+                Ready to call ${singleCall.repName} at ${singleCall.display_phone}!
+            `;
+        }
     } else {
+        workflowButton.style.display = 'none';
         callButton.style.display = 'none';
         let missingItems = [];
-        if (!activePhone) missingItems.push('active phone number');
+        if (selectedPhones.length === 0) missingItems.push('phone numbers');
         if (!selectedCallScript) missingItems.push('script');
-        status.innerHTML = `Select a phone number and script above to enable calling (missing: ${missingItems.join(', ')}). <i class="fas fa-heart me-2"></i> <strong>Your representative wants to hear your voice!</strong> I can't simulate that (yet), so you'll have to make the calls and read the script yourself. <strong>You've got this!</strong> Just follow the workflow above and speak clearly.`;
+        status.innerHTML = `Select phone numbers and a script above to enable calling (missing: ${missingItems.join(', ')}). <i class="fas fa-heart me-2"></i> <strong>Your representative wants to hear your voice!</strong> I can't simulate that (yet), so you'll have to make the calls and read the script yourself. <strong>You've got this!</strong> Just follow the workflow above and speak clearly.`;
     }
 }
 
@@ -1913,5 +1957,223 @@ async function saveGeneratedScript() {
         console.error('Error saving script:', error);
         alert('Error saving script. Please try again.');
     }
+} 
+
+// ===== STREAMLINED CALL WORKFLOW FUNCTIONS =====
+
+// Initialize the call queue and start the streamlined workflow
+function startStreamlinedWorkflow() {
+    if (selectedPhones.length === 0 || !selectedCallScript) {
+        showAlert('Please select phone numbers and a script first', 'error');
+        return;
+    }
+    
+    // Build call queue from selected phones - include ALL selected phones, not just pending ones
+    // This ensures we don't skip phones for the same representative
+    callQueue = selectedPhones.map(phone => ({
+        ...phone,
+        status: 'pending' // Reset all statuses to pending for the workflow
+    })); // Create a deep copy to avoid modifying original
+    
+    if (callQueue.length === 0) {
+        showAlert('No phone numbers selected', 'info');
+        return;
+    }
+    
+    currentCallIndex = 0;
+    showNextCallWorkflow();
+    updateNextCallWorkflow();
+}
+
+// Show the next call workflow interface
+function showNextCallWorkflow() {
+    document.getElementById('nextCallWorkflow').style.display = 'block';
+    document.getElementById('makeCallButton').style.display = 'none';
+}
+
+// Hide the next call workflow interface
+function hideNextCallWorkflow() {
+    document.getElementById('nextCallWorkflow').style.display = 'none';
+    document.getElementById('makeCallButton').style.display = 'inline-block';
+}
+
+// Update the next call workflow display
+function updateNextCallWorkflow() {
+    if (callQueue.length === 0 || currentCallIndex >= callQueue.length) {
+        hideNextCallWorkflow();
+        return;
+    }
+    
+    const currentCall = callQueue[currentCallIndex];
+    const totalCalls = callQueue.length;
+    const progress = ((currentCallIndex + 1) / totalCalls) * 100;
+    
+    // Get current zip code
+    const zipCode = document.getElementById('zipCode').value || 'Not set';
+    
+    // Update display
+    document.getElementById('currentCallRepName').textContent = currentCall.repName;
+    document.getElementById('currentCallRepTitle').textContent = currentCall.repPosition;
+    document.getElementById('currentCallPhone').textContent = `${currentCall.phone_type}: ${currentCall.display_phone}`;
+    document.getElementById('currentCallZipCode').textContent = `Zip Code: ${zipCode}`;
+    document.getElementById('callProgressBar').style.width = `${progress}%`;
+    document.getElementById('callProgressText').textContent = `Call ${currentCallIndex + 1} of ${totalCalls}`;
+    
+    // Update button states
+    const startCallButton = document.getElementById('startCallButton');
+    const completeCallButton = document.getElementById('completeCallButton');
+    const nextCallButton = document.getElementById('nextCallButton');
+    
+    if (currentCall.status === 'pending') {
+        startCallButton.style.display = 'inline-block';
+        completeCallButton.style.display = 'none';
+        nextCallButton.style.display = 'none';
+        startCallButton.href = `tel:${currentCall.phone_link}`;
+    } else if (currentCall.status === 'active') {
+        startCallButton.style.display = 'none';
+        completeCallButton.style.display = 'inline-block';
+        nextCallButton.style.display = 'none';
+    } else if (currentCall.status === 'completed') {
+        startCallButton.style.display = 'none';
+        completeCallButton.style.display = 'none';
+        nextCallButton.style.display = 'inline-block';
+    }
+}
+
+// Start the current call
+function startCurrentCall() {
+    if (currentCallIndex >= callQueue.length) return;
+    
+    const currentCall = callQueue[currentCallIndex];
+    currentCall.status = 'active';
+    
+    // Update the corresponding phone in selectedPhones
+    const phoneInSelected = selectedPhones.find(p => p.repId === currentCall.repId && p.phoneIndex === currentCall.phoneIndex);
+    if (phoneInSelected) {
+        phoneInSelected.status = 'active';
+    }
+    
+    updateNextCallWorkflow();
+    updateCallInfo(); // Update the main rep list to show real-time status
+}
+
+// Complete the current call
+function completeCurrentCall() {
+    if (currentCallIndex >= callQueue.length) return;
+    
+    const currentCall = callQueue[currentCallIndex];
+    openCallLogModal(currentCall.repId, currentCall.phoneIndex);
+}
+
+// Move to the next call
+function nextCall() {
+    currentCallIndex++;
+    
+    if (currentCallIndex >= callQueue.length) {
+        // All calls completed
+        showAlert('All calls completed! Great job! 🎉', 'success');
+        hideNextCallWorkflow();
+        return;
+    }
+    
+    // Start the next call automatically
+    const nextCall = callQueue[currentCallIndex];
+    nextCall.status = 'active';
+    
+    // Update the corresponding phone in selectedPhones
+    const phoneInSelected = selectedPhones.find(p => p.repId === nextCall.repId && p.phoneIndex === nextCall.phoneIndex);
+    if (phoneInSelected) {
+        phoneInSelected.status = 'active';
+    }
+    
+    updateNextCallWorkflow();
+    updateCallInfo(); // Update the main rep list to show real-time status
+    
+    // Show appropriate message based on whether it's the same rep or a different one
+    const currentCall = callQueue[currentCallIndex - 1]; // Previous call
+    if (currentCall && nextCall.repId === currentCall.repId) {
+        showAlert(`Next call: ${nextCall.repName} (${nextCall.phone_type})`, 'info');
+    } else {
+        showAlert(`Starting call to ${nextCall.repName}`, 'info');
+    }
+}
+
+// Modified saveCallLog to work with streamlined workflow
+function saveCallLogStreamlined() {
+    if (!currentCallLog) return;
+    
+    const phone = currentCallLog.phone;
+    const callDateTime = document.getElementById('callDateTime').value;
+    const callOutcome = document.getElementById('callOutcome').value;
+    const failureReason = document.getElementById('failureReason').value;
+    const callNotes = document.getElementById('callNotes').value;
+    
+    // Combine notes
+    let combinedNotes = callNotes;
+    if (callOutcome === 'failed' && failureReason) {
+        combinedNotes = `Failed: ${failureReason}${callNotes ? '\n\n' + callNotes : ''}`;
+    }
+    
+    const callLogData = {
+        user_id: 'default_user',
+        representative_name: phone.repName,
+        phone_number: phone.display_phone,
+        phone_type: phone.phone_type,
+        call_datetime: callDateTime + ':00Z',
+        call_outcome: callOutcome,
+        call_notes: combinedNotes,
+        script_id: selectedCallScript ? selectedCallScript.id : null,
+        script_title: selectedCallScript ? selectedCallScript.title : '',
+        session_id: sessionId,
+        is_test_data: document.getElementById('isTestData').checked
+    };
+    
+    fetch('/api/call-logs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(callLogData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mark call as completed
+            phone.status = 'completed';
+            
+            // Update the call in the queue
+            const queueCall = callQueue.find(c => c.repId === phone.repId && c.phoneIndex === phone.phoneIndex);
+            if (queueCall) {
+                queueCall.status = 'completed';
+            }
+            
+            // Update the phone in selectedPhones
+            const selectedPhone = selectedPhones.find(p => p.repId === phone.repId && p.phoneIndex === phone.phoneIndex);
+            if (selectedPhone) {
+                selectedPhone.status = 'completed';
+            }
+            
+            updateCallInfo();
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('callLogModal'));
+            modal.hide();
+            
+            // Show success message
+            showAlert('Call logged successfully!', 'success');
+            
+            // Automatically move to next call after a short delay
+            setTimeout(() => {
+                nextCall();
+            }, 1500);
+            
+        } else {
+            showAlert('Error logging call: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error logging call. Please try again.', 'danger');
+    });
 } 
 

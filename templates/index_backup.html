@@ -69,7 +69,7 @@
                                             <div class="col-md-6">
                                                 <button class="btn btn-primary" onclick="loadRepresentatives()">
                                                     <i class="fas fa-search me-2"></i>
-                                                    Find Representatives
+                                                    Find Representatives (DEBUG: loadRepresentatives)
                                                 </button>
                                             </div>
                                         </div>
@@ -88,11 +88,6 @@
                                         <div id="representativesList"></div>
                                         <hr>
                                         <h6>Add New Representative:</h6>
-                                        <div class="row mb-3">
-                                            <div class="col-md-3">
-                                                <input type="text" class="form-control" id="newRepZipCode" placeholder="Zip Code">
-                                            </div>
-                                        </div>
                                         <div class="row">
                                             <div class="col-md-2">
                                                 <input type="text" class="form-control" id="newRepFirstName" placeholder="First Name">
@@ -110,6 +105,12 @@
                                             </div>
                                             <div class="col-md-2">
                                                 <input type="text" class="form-control" id="newRepCustomPosition" placeholder="Custom Position" style="display: none;">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-success" onclick="addRepresentative()">
+                                                    <i class="fas fa-plus me-2"></i>
+                                                    Add
+                                                </button>
                                             </div>
                                         </div>
                                         
@@ -146,13 +147,6 @@
                                                 Add Another Phone
                                             </button>
                                         </div>
-                                        
-                                        <div class="mt-3">
-                                            <button class="btn btn-success" onclick="addRepresentative()">
-                                                <i class="fas fa-plus me-2"></i>
-                                                Add Representative
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
 
@@ -180,10 +174,6 @@
                                         </div>
                                         <div class="mb-3">
                                             <textarea class="form-control" id="scriptContent" rows="6" placeholder="Enter your call script here..."></textarea>
-                                            <small class="text-muted mt-1 d-block">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                You can use these reference parameters: <code>@RepType</code> (Representative/Senator), <code>@LastName</code> (representative's last name), <code>@ZipCode</code> (your zip code)
-                                            </small>
                                         </div>
                                         <div class="d-flex justify-content-between">
                                             <button class="btn btn-success" id="saveScriptBtn" onclick="saveScript()">
@@ -199,18 +189,22 @@
                                     </div>
                                 </div>
 
-                                <!-- Step 4: Make Your Calls -->
+                                <!-- Step 4: Make Your Call -->
                                 <div class="card mb-4" id="callSection">
                                     <div class="card-header">
                                         <h5 class="mb-0">
                                             <i class="fas fa-phone-alt me-2"></i>
-                                            Step 4: Make Your Calls
+                                            Step 4: Make Your Call
                                         </h5>
                                     </div>
                                     <div class="card-body">
                                         <!-- Call Information -->
                                         <div class="row mb-4">
                                             <div class="col-12">
+                                                <div class="alert alert-success mb-3">
+                                                    <i class="fas fa-heart me-2"></i>
+                                                    <strong>Your representative wants to hear your voice!</strong> I can't simulate that (yet), so you'll have to make the calls and read the script yourself. <strong>You've got this!</strong> Just follow the workflow below and speak clearly.
+                                                </div>
                                                 <div class="call-info-card">
                                                     <h6><i class="fas fa-user me-2"></i>Calling Representatives</h6>
                                                     <div id="callRepInfo" class="call-info-content">
@@ -225,73 +219,22 @@
                                             <div class="col-12">
                                                 <div class="full-script-display" id="fullScriptDisplay">
                                                     <h6><i class="fas fa-file-alt me-2"></i>Your Call Script</h6>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Next Call Workflow -->
-                                        <div class="row mt-4" id="nextCallWorkflow" style="display: none;">
-                                            <div class="col-12">
-                                                <div class="card border-primary">
-                                                    <div class="card-header bg-primary text-white">
-                                                        <h6 class="mb-0">
-                                                            <i class="fas fa-phone-alt me-2"></i>
-                                                            Current Call
-                                                        </h6>
-                                                    </div>
-                                                    <div class="card-body">
-                                                        <div class="row">
-                                                            <div class="col-md-6">
-                                                                <div class="current-call-info">
-                                                                    <h6 id="currentCallRepName">No call in progress</h6>
-                                                                    <p class="text-muted mb-1" id="currentCallRepTitle">Select a phone number to start</p>
-                                                                    <p class="text-muted mb-2" id="currentCallPhone">Select a phone number to start</p>
-                                                                    <p class="text-muted mb-2" id="currentCallZipCode">Zip Code: Not set</p>
-                                                                    <div class="call-progress mb-3">
-                                                                        <div class="progress">
-                                                                            <div class="progress-bar" id="callProgressBar" role="progressbar" style="width: 0%"></div>
-                                                                        </div>
-                                                                        <small class="text-muted" id="callProgressText">Ready to start</small>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-md-6">
-                                                                <div class="call-actions">
-                                                                    <div class="d-grid gap-2">
-                                                                        <a href="#" class="btn btn-success" id="startCallButton" onclick="startCurrentCall()">
-                                                                            <i class="fas fa-phone me-2"></i>
-                                                                            Start Call
-                                                                        </a>
-                                                                        <button class="btn btn-primary" id="completeCallButton" style="display: none;" onclick="completeCurrentCall()">
-                                                                            <i class="fas fa-check me-2"></i>
-                                                                            Complete Call
-                                                                        </button>
-                                                                        <button class="btn btn-info" id="nextCallButton" style="display: none;" onclick="nextCall()">
-                                                                            <i class="fas fa-arrow-right me-2"></i>
-                                                                            Next Call
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                    <div class="alert alert-info" style="border: 2px solid #17a2b8;">
+                                                        <div id="fullScriptContent">
+                                                            <p class="text-muted">Select a script above to see the content here</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!-- Call Buttons -->
+                                        <!-- Call Button -->
                                         <div class="row mt-4">
                                             <div class="col-12 text-center">
-                                                <div class="d-flex justify-content-center gap-3">
-                                                    <button class="btn btn-primary btn-lg" id="startWorkflowButton" style="display: none;" onclick="startStreamlinedWorkflow()">
-                                                        <i class="fas fa-play me-2"></i>
-                                                        Start Call Workflow
-                                                    </button>
-                                                    <a href="#" class="btn btn-success btn-lg" id="makeCallButton" style="display: none;">
-                                                        <i class="fas fa-phone me-2"></i>
-                                                        Make Call Now
-                                                    </a>
-                                                </div>
+                                                <a href="#" class="btn btn-success btn-lg" id="makeCallButton" style="display: none;">
+                                                    <i class="fas fa-phone me-2"></i>
+                                                    Make Call Now
+                                                </a>
                                             </div>
                                         </div>
 
@@ -299,7 +242,7 @@
                                         <div class="row mt-2">
                                             <div class="col-12 text-center">
                                                 <div class="text-muted" id="callReadyStatus">
-                                                    Select a phone number and script above to enable calling. <i class="fas fa-heart me-2"></i> <strong>Your representative wants to hear your voice!</strong> I can't simulate that (yet), so you'll have to make the calls and read the script yourself. <strong>You've got this!</strong> Just follow the workflow above and speak clearly.
+                                                    Select a phone number and script above to enable calling
                                                 </div>
                                             </div>
                                         </div>
@@ -324,15 +267,15 @@
                                     <div class="card-body">
                                         <!-- Filters -->
                                         <div class="row mb-4">
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Start Date</label>
                                                 <input type="date" class="form-control" id="startDate">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">End Date</label>
                                                 <input type="date" class="form-control" id="endDate">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <label class="form-label">Outcome</label>
                                                 <select class="form-control" id="outcomeFilter">
                                                     <option value="">All Outcomes</option>
@@ -340,15 +283,6 @@
                                                     <option value="voicemail">Left Voicemail</option>
                                                     <option value="failed">Failed</option>
                                                 </select>
-                                            </div>
-                                            <div class="col-md-3">
-                                                <label class="form-label">&nbsp;</label>
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="includeTestData" checked>
-                                                    <label class="form-check-label" for="includeTestData">
-                                                        Include Test Data
-                                                    </label>
-                                                </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">&nbsp;</label>
@@ -446,7 +380,48 @@
         </div>
     </div>
 
-
+    <!-- Add Phone Modal -->
+    <div class="modal fade" id="addPhoneModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Phone Number</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cleanupModal()"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="addPhoneRepInfo" class="mb-3"></div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="addPhoneNumber" placeholder="Phone (any format)">
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="addPhoneExtension" placeholder="Extension (optional)">
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <select class="form-control" id="addPhoneType" onchange="toggleAddPhoneCustomType()">
+                                <option value="Main">Main</option>
+                                <option value="DC Office">DC Office</option>
+                                <option value="District Office">District Office</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control" id="addPhoneCustomType" placeholder="Custom Label" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="cleanupModal()">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="submitPhoneNumber()">
+                        <i class="fas fa-plus me-2"></i>
+                        Add Phone (DEBUG: submitPhoneNumber)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Generate AI Script Modal -->
     <div class="modal fade" id="generateScriptModal" tabindex="-1">
@@ -565,16 +540,6 @@
                         <label for="callNotes" class="form-label">Additional Notes</label>
                         <textarea class="form-control" id="callNotes" rows="3" 
                                   placeholder="Any additional notes about the call (optional)"></textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="isTestData">
-                            <label class="form-check-label" for="isTestData">
-                                This is test/dummy data
-                            </label>
-                        </div>
-                        <small class="text-muted">Check this box if this is a test call or dummy data for demonstration purposes.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
