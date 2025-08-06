@@ -96,17 +96,21 @@ function displayRepresentatives(representatives) {
         
         rep.phone_numbers.forEach((phone, index) => {
             html += `
-                <div class="phone-checkbox-item" id="phone-${rep.id}-${index}">
-                    <input type="checkbox" id="radio-${rep.id}-${index}" 
-                           value="${rep.id}-${index}" onchange="selectPhoneNumber('${rep.id}', ${index}, '${rep.full_name}', '${phone.display_phone}', '${phone.phone_type}', '${phone.phone_link}', '${rep.display_position}')">
-                    <label for="radio-${rep.id}-${index}">
-                        <i class="fas fa-phone me-2"></i>
-                        <span class="phone-type">${phone.phone_type}:</span>
-                        <span class="phone-number">${phone.display_phone}</span>
-                    </label>
-                    <button class="btn btn-outline-danger btn-sm ms-2" onclick="deletePhoneNumber(${rep.id}, ${phone.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                <div class="phone-checkbox-item w-100" id="phone-${rep.id}-${index}">
+                    <div class="d-flex align-items-center w-100">
+                        <div class="flex-grow-1">
+                            <input type="checkbox" id="radio-${rep.id}-${index}" 
+                                   value="${rep.id}-${index}" onchange="selectPhoneNumber('${rep.id}', ${index}, '${rep.full_name}', '${phone.display_phone}', '${phone.phone_type}', '${phone.phone_link}', '${rep.display_position}')">
+                            <label for="radio-${rep.id}-${index}" class="mb-0">
+                                <i class="fas fa-phone me-2"></i>
+                                <span class="phone-type">${phone.phone_type}:</span>
+                                <span class="phone-number">${phone.display_phone}</span>
+                            </label>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm ms-2 flex-shrink-0" onclick="deletePhoneNumber(${rep.id}, ${phone.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `;
         });
