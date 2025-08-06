@@ -52,6 +52,15 @@ function toggleDarkMode() {
         icon.className = 'fas fa-sun';
         localStorage.setItem('darkMode', 'true');
     }
+    
+    // Force icon color update
+    setTimeout(() => {
+        if (body.classList.contains('dark')) {
+            icon.style.color = 'var(--text-primary-dark)';
+        } else {
+            icon.style.color = 'var(--text-primary-light)';
+        }
+    }, 10);
 }
 
 // Initialize dark mode from localStorage
@@ -63,6 +72,9 @@ function initDarkMode() {
     if (darkMode === 'true') {
         body.classList.add('dark');
         icon.className = 'fas fa-sun';
+        icon.style.color = 'var(--text-primary-dark)';
+    } else {
+        icon.style.color = 'var(--text-primary-light)';
     }
 }
 
@@ -111,11 +123,11 @@ function displayRepresentatives(representatives) {
     addRepFormContainer.style.display = 'none';
 
     let html = `
-        <div class="mb-3">
-            <button class="btn btn-outline-primary btn-sm me-2" onclick="selectAllPhones()">
+        <div class="mb-3 d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" id="selectAllBtn" onclick="selectAllPhones()">
                 <i class="fas fa-check-square me-1"></i>Select All
             </button>
-            <button class="btn btn-outline-secondary btn-sm" onclick="deselectAllPhones()">
+            <button class="btn btn-outline-secondary btn-sm" id="deselectAllBtn" onclick="deselectAllPhones()">
                 <i class="fas fa-square me-1"></i>Deselect All
             </button>
         </div>
@@ -573,11 +585,8 @@ function displayScripts(scripts) {
     let html = '<div class="script-radio-group">';
 
     scripts.forEach(script => {
-        // Process reference parameters for preview (using current zip code only)
+        // Process reference parameters for full content
         const processedContent = processScriptReferences(script.content);
-        const previewText = processedContent.length > 100 ? 
-            processedContent.substring(0, 100) + '...' : 
-            processedContent;
         
         html += `
             <div class="script-radio-item" id="script-${script.id}">
@@ -585,23 +594,20 @@ function displayScripts(scripts) {
                        value="${script.id}" onchange="selectScriptById('${script.id}')">
                 <div class="script-radio-content">
                     <div class="script-title">${script.title}</div>
-                    <div class="script-preview" id="preview-${script.id}">${previewText}</div>
-                    <div class="script-full" id="full-${script.id}" style="display: none;">${processedContent.replace(/\n/g, '<br>')}</div>
-                    <div class="script-actions mt-2">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="script-action-links">
-                                <button class="btn btn-link btn-sm p-0 me-3" onclick="toggleScriptExpand(${script.id})" id="toggle-${script.id}">
-                                    <i class="fas fa-chevron-down"></i> Show more
+                    <div class="script-actions">
+                        <div class="script-action-links">
+                                                            <button class="btn btn-link btn-sm p-0 me-2" onclick="toggleScriptExpand(${script.id})" id="toggle-${script.id}">
+                                    <i class="fas fa-chevron-down"></i> Show
                                 </button>
-                                <button class="btn btn-link btn-sm p-0 me-3" onclick="editScript(${script.id})">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                            </div>
-                            <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteScript(${script.id})">
+                            <button class="btn btn-link btn-sm p-0 me-2" onclick="editScript(${script.id})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm p-0" onclick="event.stopPropagation(); deleteScript(${script.id})">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </div>
+                    <div class="script-full" id="full-${script.id}" style="display: none;">${processedContent.replace(/\n/g, '<br>')}</div>
                 </div>
             </div>
         `;
@@ -707,20 +713,17 @@ async function deleteScript(scriptId) {
 
 // Toggle script expand/collapse
 function toggleScriptExpand(scriptId) {
-    const preview = document.getElementById(`preview-${scriptId}`);
     const full = document.getElementById(`full-${scriptId}`);
     const toggle = document.getElementById(`toggle-${scriptId}`);
     
     if (full.style.display === 'none') {
         // Expand
-        preview.style.display = 'none';
         full.style.display = 'block';
-        toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Show less';
+        toggle.innerHTML = '<i class="fas fa-chevron-up"></i> Hide';
     } else {
         // Collapse
-        preview.style.display = 'block';
         full.style.display = 'none';
-        toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Show more';
+        toggle.innerHTML = '<i class="fas fa-chevron-down"></i> Show';
     }
 }
 
@@ -1346,6 +1349,9 @@ function selectAllPhones() {
         // Trigger the onchange event to update selectedPhones array
         checkbox.dispatchEvent(new Event('change'));
     });
+    
+    // Update button states
+    updateSelectAllButtonStates();
 }
 
 // Deselect all phone numbers
@@ -1356,6 +1362,39 @@ function deselectAllPhones() {
         // Trigger the onchange event to update selectedPhones array
         checkbox.dispatchEvent(new Event('change'));
     });
+    
+    // Update button states
+    updateSelectAllButtonStates();
+}
+
+// Update Select All/Deselect All button states
+function updateSelectAllButtonStates() {
+    const selectAllBtn = document.getElementById('selectAllBtn');
+    const deselectAllBtn = document.getElementById('deselectAllBtn');
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    
+    if (selectAllBtn && deselectAllBtn) {
+        if (checkedBoxes.length === 0) {
+            // No phones selected
+            selectAllBtn.classList.remove('btn-primary');
+            selectAllBtn.classList.add('btn-outline-primary');
+            deselectAllBtn.classList.remove('btn-secondary');
+            deselectAllBtn.classList.add('btn-outline-secondary');
+        } else if (checkedBoxes.length === checkboxes.length) {
+            // All phones selected
+            selectAllBtn.classList.remove('btn-outline-primary');
+            selectAllBtn.classList.add('btn-primary');
+            deselectAllBtn.classList.remove('btn-secondary');
+            deselectAllBtn.classList.add('btn-outline-secondary');
+        } else {
+            // Some phones selected
+            selectAllBtn.classList.remove('btn-primary');
+            selectAllBtn.classList.add('btn-outline-primary');
+            deselectAllBtn.classList.remove('btn-outline-secondary');
+            deselectAllBtn.classList.add('btn-secondary');
+        }
+    }
 }
 
 // Handle phone number selection (now supports multiple selections)
@@ -1386,6 +1425,9 @@ function selectPhoneNumber(repId, phoneIndex, repName, phoneNumber, phoneType, p
     
     // Update visual feedback
     updatePhoneSelectionVisual(repId, phoneIndex, checkbox.checked);
+    
+    // Update Select All button states
+    updateSelectAllButtonStates();
     
     // Update Step 4 display
     updateCallInfo();
@@ -1422,6 +1464,7 @@ function updateCallInfo() {
 // Update representative info in Step 4 using same tile as Step 2
 function updateCallRepInfo() {
     const repInfo = document.getElementById('callRepInfo');
+    const compactContainer = document.getElementById('compactRepList');
 
     if (selectedPhones.length > 0) {
         let html = '<div class="selected-reps-container">';
@@ -1494,8 +1537,21 @@ function updateCallRepInfo() {
         
         html += '</div>';
         repInfo.innerHTML = html;
+        
+        // Update compact display
+        let compactHtml = '';
+        Object.values(repsByPhone).forEach(rep => {
+            compactHtml += `
+                <div class="compact-rep-item">
+                    <span class="compact-rep-name">${rep.repName}</span>
+                    <span class="compact-rep-type">${rep.repPosition}</span>
+                </div>
+            `;
+        });
+        compactContainer.innerHTML = compactHtml;
     } else {
         repInfo.innerHTML = '<p class="text-muted">No phone numbers selected</p>';
+        compactContainer.innerHTML = '<p class="text-muted">No phone numbers selected</p>';
     }
 }
 
@@ -1640,7 +1696,6 @@ function updateFullScriptDisplay() {
 
 // Update call button
 function updateCallButton() {
-    const callButton = document.getElementById('makeCallButton');
     const workflowButton = document.getElementById('startWorkflowButton');
     const status = document.getElementById('callReadyStatus');
 
@@ -1653,34 +1708,27 @@ function updateCallButton() {
         if (hasMultipleCalls && !hasActiveCall) {
             // Show workflow button for multiple calls
             workflowButton.style.display = 'inline-block';
-            callButton.style.display = 'none';
             status.innerHTML = `
                 <i class="fas fa-check-circle text-success me-2"></i>
-                Ready to make ${selectedPhones.length} calls! Use the streamlined workflow for the best experience.
+                Ready to make ${selectedPhones.length} calls!
             `;
         } else if (hasActiveCall) {
-            // Show regular call button for single active call
+            // Hide workflow button when there's an active call
             workflowButton.style.display = 'none';
-            callButton.style.display = 'inline-block';
-            callButton.href = `tel:${hasActiveCall.phone_link}`;
             status.innerHTML = `
                 <i class="fas fa-check-circle text-success me-2"></i>
                 Ready to call ${hasActiveCall.repName} at ${hasActiveCall.display_phone}!
             `;
         } else {
             // Single pending call
-            workflowButton.style.display = 'none';
-            callButton.style.display = 'inline-block';
-            const singleCall = pendingCalls[0];
-            callButton.href = `tel:${singleCall.phone_link}`;
+            workflowButton.style.display = 'inline-block';
             status.innerHTML = `
                 <i class="fas fa-check-circle text-success me-2"></i>
-                Ready to call ${singleCall.repName} at ${singleCall.display_phone}!
+                Ready to make ${selectedPhones.length} call!
             `;
         }
     } else {
         workflowButton.style.display = 'none';
-        callButton.style.display = 'none';
         let missingItems = [];
         if (selectedPhones.length === 0) missingItems.push('phone numbers');
         if (!selectedCallScript) missingItems.push('script');
@@ -1815,6 +1863,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (startDateElement) startDateElement.value = startDate.toISOString().split('T')[0];
     if (endDateElement) endDateElement.value = endDate.toISOString().split('T')[0];
 });
+
+// Manual Script Form Functions
+function showManualScriptForm() {
+    document.getElementById('createOptions').style.display = 'none';
+    document.getElementById('manualScriptForm').style.display = 'block';
+}
+
+// Hide manual script form
+function hideManualScriptForm() {
+    document.getElementById('createOptions').style.display = 'block';
+    document.getElementById('manualScriptForm').style.display = 'none';
+    // Clear form
+    document.getElementById('scriptTitle').value = '';
+    document.getElementById('scriptContent').value = '';
+}
 
 // AI Script Generation Functions
 function openGenerateScriptModal() {
@@ -2083,6 +2146,13 @@ function startStreamlinedWorkflow() {
     }
     
     currentCallIndex = 0;
+    
+    // Immediately update the script with rep info for the first call
+    if (callQueue.length > 0) {
+        const firstCall = callQueue[0];
+        updateScriptWithRepInfo(firstCall);
+    }
+    
     showNextCallWorkflow();
     updateNextCallWorkflow();
 }
@@ -2090,13 +2160,11 @@ function startStreamlinedWorkflow() {
 // Show the next call workflow interface
 function showNextCallWorkflow() {
     document.getElementById('nextCallWorkflow').style.display = 'block';
-    document.getElementById('makeCallButton').style.display = 'none';
 }
 
 // Hide the next call workflow interface
 function hideNextCallWorkflow() {
     document.getElementById('nextCallWorkflow').style.display = 'none';
-    document.getElementById('makeCallButton').style.display = 'inline-block';
 }
 
 // Update the next call workflow display
@@ -2130,7 +2198,9 @@ function updateNextCallWorkflow() {
         startCallButton.style.display = 'inline-block';
         completeCallButton.style.display = 'none';
         nextCallButton.style.display = 'none';
-        startCallButton.href = `tel:${currentCall.phone_link}`;
+        // Use only the base 10-digit number, not the extension
+        const basePhoneNumber = currentCall.display_phone.split(' x')[0].replace(/[^0-9]/g, '');
+        startCallButton.href = `tel:${basePhoneNumber}`;
     } else if (currentCall.status === 'active') {
         startCallButton.style.display = 'none';
         completeCallButton.style.display = 'inline-block';
@@ -2188,6 +2258,9 @@ function nextCall() {
         phoneInSelected.status = 'active';
     }
     
+    // Update script with new rep info
+    updateScriptWithRepInfo(nextCall);
+    
     updateNextCallWorkflow();
     updateCallInfo(); // Update the main rep list to show real-time status
     
@@ -2197,6 +2270,42 @@ function nextCall() {
         showAlert(`Next call: ${nextCall.repName} (${nextCall.phone_type})`, 'info');
     } else {
         showAlert(`Starting call to ${nextCall.repName}`, 'info');
+    }
+}
+
+// Toggle call rep section
+function toggleCallRepSection() {
+    const body = document.getElementById('callRepInfo');
+    const compact = document.getElementById('callRepCompact');
+    const icon = document.getElementById('callRepSectionIcon');
+    
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        compact.style.display = 'none';
+        icon.className = 'fas fa-chevron-down ms-auto';
+    } else {
+        body.style.display = 'none';
+        compact.style.display = 'block';
+        icon.className = 'fas fa-chevron-right ms-auto';
+    }
+}
+
+// Update script with representative information
+function updateScriptWithRepInfo(phone) {
+    if (!selectedCallScript) return;
+    
+    // Process script references with the current phone
+    const processedScript = processScriptReferences(selectedCallScript.content, phone);
+    
+    // Update the full script display
+    const fullScriptDisplay = document.getElementById('fullScriptDisplay');
+    if (fullScriptDisplay) {
+        fullScriptDisplay.innerHTML = `
+            <h6><i class="fas fa-file-alt me-2"></i>Your Call Script</h6>
+            <div class="script-content-full">
+                ${processedScript}
+            </div>
+        `;
     }
 }
 
