@@ -588,18 +588,18 @@ function displayScripts(scripts) {
         // Process reference parameters for full content
         const processedContent = processScriptReferences(script.content);
         
-        html += `
-            <div class="script-radio-item" id="script-${script.id}">
+                html += `
+            <div class="script-radio-item" id="script-${script.id}" onclick="selectScriptById('${script.id}')">
                 <input type="radio" name="scriptSelection" id="radio-script-${script.id}"
                        value="${script.id}" onchange="selectScriptById('${script.id}')">
                 <div class="script-radio-content">
                     <div class="script-title">${script.title}</div>
                     <div class="script-actions">
                         <div class="script-action-links">
-                                                            <button class="btn btn-link btn-sm p-0 me-2" onclick="toggleScriptExpand(${script.id})" id="toggle-${script.id}">
-                                    <i class="fas fa-chevron-down"></i> Show
-                                </button>
-                            <button class="btn btn-link btn-sm p-0 me-2" onclick="editScript(${script.id})">
+                            <button class="btn btn-link btn-sm p-0 me-2" onclick="toggleScriptExpand(${script.id}); event.stopPropagation();" id="toggle-${script.id}">
+                                <i class="fas fa-chevron-down"></i> Show
+                            </button>
+                            <button class="btn btn-link btn-sm p-0 me-2" onclick="editScript(${script.id}); event.stopPropagation();">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                             <button class="btn btn-outline-danger btn-sm p-0" onclick="event.stopPropagation(); deleteScript(${script.id})">
@@ -2150,7 +2150,7 @@ function startStreamlinedWorkflow() {
     // Immediately update the script with rep info for the first call
     if (callQueue.length > 0) {
         const firstCall = callQueue[0];
-        updateScriptWithRepInfo(firstCall);
+        // Script is already displayed above - no need to duplicate
     }
     
     showNextCallWorkflow();
@@ -2200,7 +2200,9 @@ function updateNextCallWorkflow() {
         nextCallButton.style.display = 'none';
         // Use only the base 10-digit number, not the extension
         const basePhoneNumber = currentCall.display_phone.split(' x')[0].replace(/[^0-9]/g, '');
-        startCallButton.href = `tel:${basePhoneNumber}`;
+        // Ensure we only use exactly 10 digits
+        const cleanPhoneNumber = basePhoneNumber.replace(/\D/g, '').substring(0, 10);
+        startCallButton.href = `tel:${cleanPhoneNumber}`;
     } else if (currentCall.status === 'active') {
         startCallButton.style.display = 'none';
         completeCallButton.style.display = 'inline-block';
@@ -2248,18 +2250,17 @@ function nextCall() {
         return;
     }
     
-    // Start the next call automatically
+    // Set the next call to pending (not active) so Start Call button appears
     const nextCall = callQueue[currentCallIndex];
-    nextCall.status = 'active';
+    nextCall.status = 'pending';
     
     // Update the corresponding phone in selectedPhones
     const phoneInSelected = selectedPhones.find(p => p.repId === nextCall.repId && p.phoneIndex === nextCall.phoneIndex);
     if (phoneInSelected) {
-        phoneInSelected.status = 'active';
+        phoneInSelected.status = 'pending';
     }
     
-    // Update script with new rep info
-    updateScriptWithRepInfo(nextCall);
+    // No need to duplicate script - user can read from existing display above
     
     updateNextCallWorkflow();
     updateCallInfo(); // Update the main rep list to show real-time status
@@ -2269,7 +2270,7 @@ function nextCall() {
     if (currentCall && nextCall.repId === currentCall.repId) {
         showAlert(`Next call: ${nextCall.repName} (${nextCall.phone_type})`, 'info');
     } else {
-        showAlert(`Starting call to ${nextCall.repName}`, 'info');
+        showAlert(`Next call: ${nextCall.repName}`, 'info');
     }
 }
 
@@ -2290,24 +2291,7 @@ function toggleCallRepSection() {
     }
 }
 
-// Update script with representative information
-function updateScriptWithRepInfo(phone) {
-    if (!selectedCallScript) return;
-    
-    // Process script references with the current phone
-    const processedScript = processScriptReferences(selectedCallScript.content, phone);
-    
-    // Update the full script display
-    const fullScriptDisplay = document.getElementById('fullScriptDisplay');
-    if (fullScriptDisplay) {
-        fullScriptDisplay.innerHTML = `
-            <h6><i class="fas fa-file-alt me-2"></i>Your Call Script</h6>
-            <div class="script-content-full">
-                ${processedScript}
-            </div>
-        `;
-    }
-}
+// Script display is handled by updateFullScriptDisplay - no duplication needed
 
 // Modified saveCallLog to work with streamlined workflow
 function saveCallLogStreamlined() {
