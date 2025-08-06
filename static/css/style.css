@@ -1,54 +1,273 @@
+/* Glassmorphism Design System */
+:root {
+    /* Light Mode Colors */
+    --glass-bg-light: rgba(255, 255, 255, 0.8);
+    --glass-bg-light-hover: rgba(255, 255, 255, 0.9);
+    --glass-border-light: rgba(0, 0, 0, 0.1);
+    --glass-border-light-hover: rgba(0, 0, 0, 0.2);
+    --text-primary-light: #1a202c;
+    --text-secondary-light: #4a5568;
+    --accent-primary-light: #2563eb;
+    --accent-secondary-light: #059669;
+    --accent-danger-light: #dc2626;
+    
+    /* Dark Mode Colors */
+    --glass-bg-dark: rgba(0, 0, 0, 0.3);
+    --glass-bg-dark-hover: rgba(0, 0, 0, 0.4);
+    --glass-border-dark: rgba(255, 255, 255, 0.1);
+    --glass-border-dark-hover: rgba(255, 255, 255, 0.2);
+    --text-primary-dark: #f8fafc;
+    --text-secondary-dark: #cbd5e0;
+    --accent-primary-dark: #60a5fa;
+    --accent-secondary-dark: #34d399;
+    --accent-danger-dark: #f87171;
+    
+    /* Common Properties */
+    --glass-radius: 1rem;
+    --glass-radius-large: 1.5rem;
+    --glass-blur: blur(10px);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    --glass-shadow-hover: 0 12px 40px rgba(0, 0, 0, 0.15);
+    --transition: all 0.3s ease;
+}
+
 body {
-    background-color: #f8f9fa;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Light Mode Background */
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: var(--text-primary-light);
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    transition: var(--transition);
+}
+
+/* Dark Mode */
+body.dark {
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    color: var(--text-primary-dark);
+}
+
+/* Glassmorphic Navbar */
+.glassmorphic-navbar {
+    background: var(--glass-bg-light) !important;
+    backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--glass-border-light);
+    box-shadow: var(--glass-shadow);
+    transition: var(--transition);
+}
+
+body.dark .glassmorphic-navbar {
+    background: var(--glass-bg-dark) !important;
+    border-bottom: 1px solid var(--glass-border-dark);
+}
+
+/* Glassmorphic Tabs */
+.glassmorphic-tabs {
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--glass-radius);
+    padding: 0.25rem;
+    box-shadow: var(--glass-shadow);
+    border: 1px solid var(--glass-border-light);
+    transition: var(--transition);
+}
+
+body.dark .glassmorphic-tabs {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
+.glassmorphic-tabs .nav-link {
+    border: none;
+    border-radius: var(--glass-radius);
+    color: var(--text-secondary-light);
+    font-weight: 500;
+    transition: var(--transition);
+    margin: 0 0.125rem;
+    background: transparent;
+    backdrop-filter: var(--glass-blur);
+}
+
+body.dark .glassmorphic-tabs .nav-link {
+    color: var(--text-secondary-dark);
+}
+
+.glassmorphic-tabs .nav-link:hover {
+    background: var(--glass-bg-light-hover);
+    color: var(--text-primary-light);
+    transform: translateY(-1px);
+    box-shadow: var(--glass-shadow-hover);
+}
+
+body.dark .glassmorphic-tabs .nav-link:hover {
+    background: var(--glass-bg-dark-hover);
+    color: var(--text-primary-dark);
+}
+
+.glassmorphic-tabs .nav-link.active {
+    background: var(--accent-primary-light);
+    color: white;
+    box-shadow: var(--glass-shadow-hover);
+}
+
+body.dark .glassmorphic-tabs .nav-link.active {
+    background: var(--accent-primary-dark);
 }
 
 .navbar-brand {
-    font-weight: bold;
+    font-weight: 700;
     font-size: 1.5rem;
     word-wrap: break-word;
     white-space: normal;
+    color: var(--text-primary-light) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
 }
 
+body.dark .navbar-brand {
+    color: var(--text-primary-dark) !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Glassmorphic Card Design */
 .card {
     border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    border-radius: 10px;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--glass-radius-large);
+    margin-bottom: 1rem;
+    transition: var(--transition);
+    border: 1px solid var(--glass-border-light);
+}
+
+body.dark .card {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hover);
+    background: var(--glass-bg-light-hover);
+    border-color: var(--glass-border-light-hover);
+}
+
+body.dark .card:hover {
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
 }
 
 .card-header {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border-radius: 10px 10px 0 0 !important;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    color: var(--text-primary-light);
+    border-radius: var(--glass-radius-large) var(--glass-radius-large) 0 0 !important;
     border: none;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--glass-border-light);
+    transition: var(--transition);
+}
+
+body.dark .card-header {
+    background: var(--glass-bg-dark);
+    color: var(--text-primary-dark);
+    border-bottom: 1px solid var(--glass-border-dark);
 }
 
 .card-header h5 {
     margin: 0;
-    font-weight: 600;
+    font-weight: 700;
+    color: var(--text-primary-light);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: var(--transition);
+}
+
+body.dark .card-header h5 {
+    color: var(--text-primary-dark);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.card-body {
+    padding: 1rem;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border-radius: 0 0 var(--glass-radius-large) var(--glass-radius-large);
+    transition: var(--transition);
+}
+
+body.dark .card-body {
+    background: var(--glass-bg-dark);
 }
 
 .representative-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    transition: all 0.3s ease;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    transition: var(--transition);
+    box-shadow: var(--glass-shadow);
+}
+
+body.dark .representative-card {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
+.rep-header {
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--neumorphic-dark);
+    box-shadow: var(--neumorphic-shadow-inset);
+    border-radius: var(--neumorphic-radius);
+    padding: 0.75rem;
+    margin: -0.25rem -0.25rem 0.75rem -0.25rem;
+}
+
+.phone-numbers-section {
+    width: 100%;
+}
+
+.zip-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.zip-input-container input {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+}
+
+.zip-input-container button {
+    flex-shrink: 0;
+    white-space: normal;
+    min-width: 140px;
+    max-width: 160px;
+    text-align: center;
+    line-height: 1.2;
 }
 
 .representative-card:hover {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
+    transform: translateY(-1px);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.075);
 }
 
 .representative-card h6 {
-    color: #007bff;
-    margin-bottom: 10px;
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .phone-numbers {
-    margin-top: 10px;
+    margin-top: 0.5rem;
 }
 
 .phone-number {
@@ -64,25 +283,43 @@ body {
 }
 
 .position-badge {
-    background-color: #6c757d;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
+    background: var(--neumorphic-dark);
+    color: var(--text-primary);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--neumorphic-radius);
     font-size: 0.8rem;
-    margin-left: 10px;
+    margin-left: 0.75rem;
+    font-weight: 500;
+    box-shadow: var(--neumorphic-shadow-inset);
+    border: 1px solid var(--neumorphic-dark);
 }
 
 .script-card {
-    background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 15px;
-    transition: all 0.3s ease;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    transition: var(--transition);
+    box-shadow: var(--glass-shadow);
+}
+
+body.dark .script-card {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
 }
 
 .script-card:hover {
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hover);
+    background: var(--glass-bg-light-hover);
+    border-color: var(--glass-border-light-hover);
+}
+
+body.dark .script-card:hover {
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
 }
 
 .script-title {
@@ -98,38 +335,89 @@ body {
     line-height: 1.5;
 }
 
+/* Glassmorphic Button Design */
 .btn {
-    border-radius: 6px;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    border-radius: var(--glass-radius);
+    font-weight: 600;
+    transition: var(--transition);
+    border: 1px solid var(--glass-border-light);
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    color: var(--text-primary-light);
+}
+
+body.dark .btn {
+    border: 1px solid var(--glass-border-dark);
+    background: var(--glass-bg-dark);
+    color: var(--text-primary-dark);
 }
 
 .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    transform: translateY(-2px);
+    box-shadow: var(--glass-shadow-hover);
+    background: var(--glass-bg-light-hover);
+    border-color: var(--glass-border-light-hover);
+    backdrop-filter: blur(15px);
 }
 
+body.dark .btn:hover {
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: var(--glass-shadow);
+}
+
+/* Glassmorphic Form Controls */
 .form-control {
-    border-radius: 6px;
-    border: 1px solid #ced4da;
-    transition: border-color 0.3s ease;
+    border-radius: var(--glass-radius);
+    border: 1px solid var(--glass-border-light);
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    transition: var(--transition);
+    color: var(--text-primary-light);
+    padding: 0.5rem 0.75rem;
+}
+
+body.dark .form-control {
+    border: 1px solid var(--glass-border-dark);
+    background: var(--glass-bg-dark);
+    color: var(--text-primary-dark);
 }
 
 .form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    outline: none;
+    box-shadow: var(--glass-shadow-hover), 0 0 0 2px var(--accent-primary-light);
+    background: var(--glass-bg-light-hover);
+    border-color: var(--glass-border-light-hover);
+    backdrop-filter: blur(15px);
 }
 
+body.dark .form-control:focus {
+    box-shadow: var(--glass-shadow-hover), 0 0 0 2px var(--accent-primary-dark);
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
+}
+
+/* Neumorphic Modal Design */
 .modal-content {
-    border-radius: 10px;
+    border-radius: var(--neumorphic-radius-large);
     border: none;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    background: var(--neumorphic-light);
+    box-shadow: var(--neumorphic-shadow-light);
 }
 
 .modal-header {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border-radius: 10px 10px 0 0;
+    background: var(--neumorphic-light);
+    color: var(--text-primary);
+    border-radius: var(--neumorphic-radius-large) var(--neumorphic-radius-large) 0 0;
+    box-shadow: var(--neumorphic-shadow-inset);
+    border-bottom: 2px solid var(--neumorphic-dark);
 }
 
 .modal-header .btn-close {
@@ -142,21 +430,23 @@ body {
     }
     
     .card-body {
-        padding: 15px;
-    }
+    padding: 1rem;
+    background: var(--neumorphic-light);
+    border-radius: 0 0 var(--neumorphic-radius-large) var(--neumorphic-radius-large);
+}
     
     .representative-card {
-        padding: 10px;
+        padding: 0.5rem;
     }
     
     .btn {
         width: 100%;
-        margin-bottom: 10px;
+        margin-bottom: 0.5rem;
     }
     
     /* Stack form fields vertically on mobile */
     .row .col-md-2 {
-        margin-bottom: 10px;
+        margin-bottom: 0.5rem;
     }
     
     .row .col-md-2 input,
@@ -177,7 +467,7 @@ body {
     
     .script-radio-item .btn-outline-danger {
         width: 100%;
-        margin-top: 10px;
+        margin-top: 0.5rem;
         margin-left: 0;
     }
     
@@ -196,23 +486,56 @@ body {
         padding: 4px 8px;
     }
     
+    .script-action-links {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .script-actions .d-flex {
+        width: 100%;
+    }
+    
     /* Mobile-specific phone number layout improvements */
+    .zip-input-container {
+        gap: 8px;
+    }
+    
+    .zip-input-container input {
+        min-width: 100px;
+        max-width: 150px;
+    }
+    
+    .zip-input-container button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        min-width: 120px;
+        max-width: 140px;
+        white-space: normal;
+        text-align: center;
+        line-height: 1.2;
+    }
+    
+    .phone-numbers-section {
+        width: 100%;
+    }
+    
     .phone-checkbox-item {
         padding: 10px;
     }
     
-    .phone-checkbox-item .d-flex {
-        width: 100%;
+    .phone-row {
+        gap: 8px;
     }
     
-    .phone-checkbox-item .flex-grow-1 {
-        min-width: 0; /* Allow text to shrink */
+    .phone-content {
+        flex: 1;
+        min-width: 0;
     }
     
     .phone-checkbox-item label {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.4;
     }
     
     .phone-checkbox-item .phone-number {
@@ -220,9 +543,10 @@ body {
         white-space: normal;
     }
     
-    .phone-checkbox-item .btn-outline-danger {
-        flex-shrink: 0;
-        margin-left: 8px;
+    .delete-btn {
+        min-width: 36px;
+        height: 36px;
+        padding: 8px;
     }
 }
 
@@ -242,60 +566,117 @@ body {
 }
 
 .alert {
-    border-radius: 8px;
-    border: none;
+    border-radius: var(--glass-radius);
+    border: 1px solid var(--glass-border-light);
+    box-shadow: var(--glass-shadow);
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    transition: var(--transition);
+}
+
+body.dark .alert {
+    border: 1px solid var(--glass-border-dark);
+    background: var(--glass-bg-dark);
 }
 
 .success-message {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-    color: #155724;
+    background: var(--accent-secondary-light);
+    color: white;
+    box-shadow: var(--glass-shadow);
+    border-color: var(--accent-secondary-light);
+}
+
+body.dark .success-message {
+    background: var(--accent-secondary-dark);
+    border-color: var(--accent-secondary-dark);
 }
 
 .error-message {
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-    color: #721c24;
+    background: var(--accent-danger-light);
+    color: white;
+    box-shadow: var(--glass-shadow);
+    border-color: var(--accent-danger-light);
+}
+
+body.dark .error-message {
+    background: var(--accent-danger-dark);
+    border-color: var(--accent-danger-dark);
 }
 
 .call-step {
     padding: 15px;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
     margin-bottom: 15px;
-    background-color: #f8f9fa;
+    box-shadow: var(--glass-shadow);
+    transition: var(--transition);
+}
+
+body.dark .call-step {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
 }
 
 .call-step h6 {
-    color: #007bff;
+    color: var(--accent-primary-light);
     margin-bottom: 15px;
     font-weight: 600;
+    transition: var(--transition);
+}
+
+body.dark .call-step h6 {
+    color: var(--accent-primary-dark);
 }
 
 .call-step h6 i {
-    color: #6c757d;
+    color: var(--text-secondary-light);
+    transition: var(--transition);
+}
+
+body.dark .call-step h6 i {
+    color: var(--text-secondary-dark);
 } 
 
 /* Selection Cards */
 .selection-card {
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
+    border: 2px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
     padding: 15px;
-    background-color: #f8f9fa;
-    transition: all 0.3s ease;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    transition: var(--transition);
     height: 100%;
+    box-shadow: var(--glass-shadow);
+}
+
+body.dark .selection-card {
+    border: 2px solid var(--glass-border-dark);
+    background: var(--glass-bg-dark);
 }
 
 .selection-card.selected {
-    border-color: #28a745;
-    background-color: #d4edda;
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
+    border-color: var(--accent-secondary-light);
+    background: var(--accent-secondary-light);
+    box-shadow: var(--glass-shadow-hover);
+    color: white;
+}
+
+body.dark .selection-card.selected {
+    border-color: var(--accent-secondary-dark);
+    background: var(--accent-secondary-dark);
 }
 
 .selection-card h6 {
-    color: #495057;
+    color: var(--text-primary-light);
     margin-bottom: 10px;
     font-weight: 600;
+    transition: var(--transition);
+}
+
+body.dark .selection-card h6 {
+    color: var(--text-primary-dark);
 }
 
 .selection-content {
@@ -308,18 +689,28 @@ body {
 }
 
 .selection-content .selected-item {
-    background-color: #28a745;
+    background: var(--accent-secondary-light);
     color: white;
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: var(--glass-radius);
     font-weight: 500;
     margin-bottom: 5px;
+    transition: var(--transition);
+}
+
+body.dark .selection-content .selected-item {
+    background: var(--accent-secondary-dark);
 }
 
 .selection-content .selected-details {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--text-secondary-light);
     margin-top: 5px;
+    transition: var(--transition);
+}
+
+body.dark .selection-content .selected-details {
+    color: var(--text-secondary-dark);
 }
 
 /* Script Preview */
@@ -328,26 +719,56 @@ body {
 }
 
 .script-preview h6 {
-    color: #495057;
+    color: var(--text-primary-light);
     margin-bottom: 15px;
     font-weight: 600;
+    transition: var(--transition);
+}
+
+body.dark .script-preview h6 {
+    color: var(--text-primary-dark);
 }
 
 /* Call Section */
 #callSection {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
+    padding: 1rem;
+    margin-top: 1rem;
+    box-shadow: var(--glass-shadow);
+}
+
+body.dark #callSection {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
 }
 
 #makeCallButton {
     font-size: 1.2rem;
     padding: 15px 30px;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-    transition: all 0.3s ease;
+    background: var(--accent-secondary-light);
+    border-color: var(--accent-secondary-light);
+    box-shadow: var(--glass-shadow-hover);
+    transition: var(--transition);
+}
+
+body.dark #makeCallButton {
+    background: var(--accent-secondary-dark);
+    border-color: var(--accent-secondary-dark);
 }
 
 #makeCallButton:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
+    box-shadow: var(--glass-shadow-hover);
+    background: var(--accent-secondary-light);
+    border-color: var(--accent-secondary-light);
+}
+
+body.dark #makeCallButton:hover {
+    background: var(--accent-secondary-dark);
+    border-color: var(--accent-secondary-dark);
 }
 
 #callInstructions {
@@ -406,17 +827,30 @@ body {
 
 /* Call Info Cards */
 .call-info-card {
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
+    border: 2px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
     padding: 15px;
-    background-color: #f8f9fa;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
     height: 100%;
+    box-shadow: var(--glass-shadow);
+    transition: var(--transition);
+}
+
+body.dark .call-info-card {
+    border: 2px solid var(--glass-border-dark);
+    background: var(--glass-bg-dark);
 }
 
 .call-info-card h6 {
-    color: #495057;
+    color: var(--text-primary-light);
     margin-bottom: 10px;
     font-weight: 600;
+    transition: var(--transition);
+}
+
+body.dark .call-info-card h6 {
+    color: var(--text-primary-dark);
 }
 
 .call-info-content {
@@ -429,18 +863,28 @@ body {
 }
 
 .call-info-content .selected-info {
-    background-color: #28a745;
+    background: var(--accent-secondary-light);
     color: white;
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: var(--glass-radius);
     font-weight: 500;
     margin-bottom: 5px;
+    transition: var(--transition);
+}
+
+body.dark .call-info-content .selected-info {
+    background: var(--accent-secondary-dark);
 }
 
 .call-info-content .selected-details {
     font-size: 0.8rem;
-    color: #6c757d;
+    color: var(--text-secondary-light);
     margin-top: 5px;
+    transition: var(--transition);
+}
+
+body.dark .call-info-content .selected-details {
+    color: var(--text-secondary-dark);
 }
 
 /* Full Script Display */
@@ -449,9 +893,14 @@ body {
 }
 
 .full-script-display h6 {
-    color: #495057;
+    color: var(--text-primary-light);
     margin-bottom: 15px;
     font-weight: 600;
+    transition: var(--transition);
+}
+
+body.dark .full-script-display h6 {
+    color: var(--text-primary-dark);
 }
 
 /* Radio Button Styling */
@@ -464,17 +913,40 @@ body {
     align-items: center;
     padding: 8px 12px;
     margin-bottom: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
+    transition: var(--transition);
+    box-shadow: var(--glass-shadow);
+}
+
+body.dark .phone-radio-item {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
 }
 
 .phone-radio-item:hover {
-    background-color: #f8f9fa;
+    background: var(--glass-bg-light-hover);
+    box-shadow: var(--glass-shadow-hover);
+    border-color: var(--glass-border-light-hover);
+    transform: translateY(-1px);
+}
+
+body.dark .phone-radio-item:hover {
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
 }
 
 .phone-radio-item.selected {
-    background-color: #d4edda;
-    border-left: 4px solid #28a745;
+    background: var(--accent-secondary-light);
+    border-left: 4px solid var(--accent-secondary-light);
+    color: white;
+}
+
+body.dark .phone-radio-item.selected {
+    background: var(--accent-secondary-dark);
+    border-left: 4px solid var(--accent-secondary-dark);
 }
 
 .phone-radio-item input[type="radio"] {
@@ -496,16 +968,40 @@ body {
     align-items: flex-start;
     padding: 12px;
     margin-bottom: 8px;
-    border: 1px solid #e9ecef;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    border-radius: var(--glass-radius);
+    transition: var(--transition);
+    box-shadow: var(--glass-shadow);
 }
+
+body.dark .script-radio-item {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
 .script-radio-item:hover {
-    background-color: #f8f9fa;
+    background: var(--glass-bg-light-hover);
+    box-shadow: var(--glass-shadow-hover);
+    border-color: var(--glass-border-light-hover);
+    transform: translateY(-1px);
 }
+
+body.dark .script-radio-item:hover {
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
+}
+
 .script-radio-item.selected {
-    background-color: #d4edda;
-    border-color: #28a745;
+    background: var(--accent-secondary-light);
+    border-color: var(--accent-secondary-light);
+    color: white;
+}
+
+body.dark .script-radio-item.selected {
+    background: var(--accent-secondary-dark);
+    border-color: var(--accent-secondary-dark);
 }
 
 .script-radio-content {
@@ -516,35 +1012,76 @@ body {
 .script-title {
     font-weight: 600;
     margin-bottom: 5px;
-    color: #495057;
+    color: var(--text-primary-light);
+    transition: var(--transition);
+}
+
+body.dark .script-title {
+    color: var(--text-primary-dark);
 }
 
 .script-preview {
-    color: #6c757d;
+    color: var(--text-secondary-light);
     font-size: 0.9em;
     line-height: 1.4;
+    transition: var(--transition);
+}
+
+body.dark .script-preview {
+    color: var(--text-secondary-dark);
 }
 
 .script-full {
-    color: #495057;
+    color: var(--text-primary-light);
     font-size: 0.9em;
     line-height: 1.5;
     margin-top: 8px;
     padding: 8px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    border-left: 3px solid #007bff;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--glass-radius);
+    border-left: 3px solid var(--accent-primary-light);
+    transition: var(--transition);
+}
+
+body.dark .script-full {
+    color: var(--text-primary-dark);
+    background: var(--glass-bg-dark);
+    border-left: 3px solid var(--accent-primary-dark);
 }
 
 .script-radio-item .btn-link {
-    color: #007bff;
+    color: var(--accent-primary-light);
     text-decoration: none;
     font-size: 0.8em;
+    transition: var(--transition);
+}
+
+body.dark .script-radio-item .btn-link {
+    color: var(--accent-primary-dark);
 }
 
 .script-radio-item .btn-link:hover {
-    color: #0056b3;
+    color: var(--accent-primary-light);
     text-decoration: underline;
+}
+
+body.dark .script-radio-item .btn-link:hover {
+    color: var(--accent-primary-dark);
+}
+
+.script-action-links {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.script-action-links .btn,
+.script-radio-item .btn-outline-danger {
+    min-width: 80px;
+    text-align: center;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
 }
 
 /* Step 4 Script Display */
@@ -552,9 +1089,16 @@ body {
     font-family: inherit;
     line-height: 1.6;
     padding: 10px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    border: 1px solid #e9ecef;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border-radius: var(--glass-radius);
+    border: 1px solid var(--glass-border-light);
+    transition: var(--transition);
+}
+
+body.dark .script-content-full {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
 }
 
 .script-content-full::-webkit-scrollbar {
@@ -577,26 +1121,97 @@ body {
 
 /* Phone Checkbox Styling */
 .phone-checkbox-group {
-    margin-top: 10px;
+    margin-top: 0.5rem;
 }
 
 .phone-checkbox-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: var(--glass-radius);
+    transition: var(--transition);
+    width: 100%;
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-shadow);
+    border: 1px solid var(--glass-border-light);
+}
+
+body.dark .phone-checkbox-item {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+}
+
+.phone-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.phone-content {
     display: flex;
     align-items: center;
-    padding: 8px 12px;
-    margin-bottom: 5px;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
-    width: 100%;
+    flex: 1;
+    min-width: 0;
+}
+
+.delete-btn {
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border-light);
+    color: var(--accent-danger-light);
+    border-radius: var(--glass-radius);
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    transition: var(--transition);
+    box-shadow: var(--glass-shadow);
+}
+
+body.dark .delete-btn {
+    background: var(--glass-bg-dark);
+    border: 1px solid var(--glass-border-dark);
+    color: var(--accent-danger-dark);
+}
+
+.delete-btn:hover {
+    background: var(--accent-danger-light);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--glass-shadow-hover);
+    border-color: var(--accent-danger-light);
+}
+
+body.dark .delete-btn:hover {
+    background: var(--accent-danger-dark);
+    border-color: var(--accent-danger-dark);
 }
 
 .phone-checkbox-item:hover {
-    background-color: #f8f9fa;
+    background: var(--glass-bg-light-hover);
+    box-shadow: var(--glass-shadow-hover);
+    transform: translateY(-1px);
+    border-color: var(--glass-border-light-hover);
+}
+
+body.dark .phone-checkbox-item:hover {
+    background: var(--glass-bg-dark-hover);
+    border-color: var(--glass-border-dark-hover);
 }
 
 .phone-checkbox-item.selected {
-    background-color: #d4edda;
-    border-left: 4px solid #28a745;
+    background: var(--accent-secondary-light);
+    box-shadow: var(--glass-shadow-hover);
+    border-left: 4px solid var(--accent-secondary-light);
+}
+
+body.dark .phone-checkbox-item.selected {
+    background: var(--accent-secondary-dark);
+    border-left: 4px solid var(--accent-secondary-dark);
 }
 
 .phone-checkbox-item input[type="checkbox"] {
@@ -608,6 +1223,8 @@ body {
     cursor: pointer;
     flex: 1;
 }
+
+
 
 /* Step 4 Representative Tiles */
 .selected-reps-container {

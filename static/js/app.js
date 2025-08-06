@@ -38,6 +38,34 @@ async function loadRepresentatives() {
     }
 }
 
+// Dark Mode Toggle
+function toggleDarkMode() {
+    const body = document.body;
+    const icon = document.getElementById('darkModeIcon');
+    
+    if (body.classList.contains('dark')) {
+        body.classList.remove('dark');
+        icon.className = 'fas fa-moon';
+        localStorage.setItem('darkMode', 'false');
+    } else {
+        body.classList.add('dark');
+        icon.className = 'fas fa-sun';
+        localStorage.setItem('darkMode', 'true');
+    }
+}
+
+// Initialize dark mode from localStorage
+function initDarkMode() {
+    const darkMode = localStorage.getItem('darkMode');
+    const body = document.body;
+    const icon = document.getElementById('darkModeIcon');
+    
+    if (darkMode === 'true') {
+        body.classList.add('dark');
+        icon.className = 'fas fa-sun';
+    }
+}
+
 // Load representatives without requiring zip code (for initialization)
 async function loadInitialRepresentatives() {
     try {
@@ -45,7 +73,7 @@ async function loadInitialRepresentatives() {
         document.getElementById('representativesList').innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                Enter a zip code above to find your representatives, or add them manually below.
+                Enter a zip code above to find your representatives!
             </div>
         `;
         
@@ -62,16 +90,25 @@ async function loadInitialRepresentatives() {
 // Display representatives in the UI
 function displayRepresentatives(representatives) {
     const container = document.getElementById('representativesList');
+    const addRepButtonContainer = document.getElementById('addRepButtonContainer');
+    const addRepFormContainer = document.getElementById('addRepFormContainer');
     
     if (representatives.length === 0) {
         container.innerHTML = `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                No representatives found for this zip code.
+            <div class="alert alert-success">
+                <i class="fas fa-star me-2"></i>
+                <strong>Congratulations!</strong> You're the first user from this Zip Code. Please extend the dataset by adding your representative's information below!
             </div>
         `;
+        // Show the add rep form for new zip codes
+        addRepButtonContainer.style.display = 'none';
+        addRepFormContainer.style.display = 'block';
         return;
     }
+    
+    // Hide the add rep form when representatives exist
+    addRepButtonContainer.style.display = 'block';
+    addRepFormContainer.style.display = 'none';
 
     let html = `
         <div class="mb-3">
@@ -87,27 +124,42 @@ function displayRepresentatives(representatives) {
     representatives.forEach(rep => {
         html += `
             <div class="representative-card mb-3" id="rep-${rep.id}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6>${rep.full_name} <span class="position-badge">${rep.display_position}</span></h6>
-                        <div class="phone-numbers">
-                            <div class="phone-checkbox-group">
+                <div class="rep-header">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6>${rep.full_name} <span class="position-badge">${rep.display_position}</span></h6>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-success btn-sm" onclick="showAddPhoneForm(${rep.id})">
+                                <i class="fas fa-plus me-1"></i>
+                                Add Phone
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm" onclick="deleteRepresentative(${rep.id})">
+                                <i class="fas fa-trash me-1"></i>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="phone-numbers-section">
+                    <div class="phone-checkbox-group">
         `;
         
         rep.phone_numbers.forEach((phone, index) => {
             html += `
-                <div class="phone-checkbox-item w-100" id="phone-${rep.id}-${index}">
-                    <div class="d-flex align-items-center w-100">
-                        <div class="flex-grow-1">
+                <div class="phone-checkbox-item" id="phone-${rep.id}-${index}">
+                    <div class="phone-row">
+                        <div class="phone-content">
                             <input type="checkbox" id="radio-${rep.id}-${index}" 
                                    value="${rep.id}-${index}" onchange="selectPhoneNumber('${rep.id}', ${index}, '${rep.full_name}', '${phone.display_phone}', '${phone.phone_type}', '${phone.phone_link}', '${rep.display_position}')">
-                            <label for="radio-${rep.id}-${index}" class="mb-0">
+                            <label for="radio-${rep.id}-${index}">
                                 <i class="fas fa-phone me-2"></i>
                                 <span class="phone-type">${phone.phone_type}:</span>
                                 <span class="phone-number">${phone.display_phone}</span>
                             </label>
                         </div>
-                        <button class="btn btn-outline-danger btn-sm ms-2 flex-shrink-0" onclick="deletePhoneNumber(${rep.id}, ${phone.id})">
+                        <button class="delete-btn" onclick="deletePhoneNumber(${rep.id}, ${phone.id})">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -148,18 +200,6 @@ function displayRepresentatives(representatives) {
         `;
         
         html += `
-                            </div>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-success btn-sm" onclick="showAddPhoneForm(${rep.id})">
-                            <i class="fas fa-plus me-1"></i>
-                            Add Phone
-                        </button>
-                        <button class="btn btn-outline-danger btn-sm" onclick="deleteRepresentative(${rep.id})">
-                            <i class="fas fa-trash me-1"></i>
-                            Delete
-                        </button>
                     </div>
                 </div>
             </div>
@@ -170,6 +210,59 @@ function displayRepresentatives(representatives) {
 }
 
 // Add a new representative
+function showAddRepForm() {
+    const addRepButtonContainer = document.getElementById('addRepButtonContainer');
+    const addRepFormContainer = document.getElementById('addRepFormContainer');
+    
+    addRepButtonContainer.style.display = 'none';
+    addRepFormContainer.style.display = 'block';
+}
+
+function hideAddRepForm() {
+    const addRepButtonContainer = document.getElementById('addRepButtonContainer');
+    const addRepFormContainer = document.getElementById('addRepFormContainer');
+    
+    addRepButtonContainer.style.display = 'block';
+    addRepFormContainer.style.display = 'none';
+    
+    // Clear the form fields
+    document.getElementById('newRepZipCode').value = '';
+    document.getElementById('newRepFirstName').value = '';
+    document.getElementById('newRepLastName').value = '';
+    document.getElementById('newRepPosition').value = 'Senator';
+    document.getElementById('newRepCustomPosition').value = '';
+    document.getElementById('newRepCustomPosition').style.display = 'none';
+    
+    // Clear phone numbers
+    const phoneNumbersList = document.getElementById('phoneNumbersList');
+    phoneNumbersList.innerHTML = `
+        <div class="phone-number-entry row mb-2">
+            <div class="col-md-3">
+                <input type="text" class="form-control" placeholder="Phone (any format)" data-phone="phone">
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" placeholder="Extension" data-phone="extension">
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" data-phone="type" onchange="toggleCustomPhoneType(this)">
+                    <option value="Main">Main</option>
+                    <option value="DC Office">DC Office</option>
+                    <option value="District Office">District Office</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="text" class="form-control" placeholder="Custom Label" data-phone="custom-type" style="display: none;">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-danger btn-sm" onclick="removePhoneNumber(this)">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
 function addRepresentative() {
     const firstName = document.getElementById('newRepFirstName').value.trim();
     const lastName = document.getElementById('newRepLastName').value.trim();
@@ -271,7 +364,8 @@ function addRepresentative() {
             }
         });
         
-        // Reload representatives
+        // Hide the form and reload representatives
+        hideAddRepForm();
         loadRepresentatives();
         showAlert('Representative added successfully!', 'success');
     })
@@ -494,17 +588,21 @@ function displayScripts(scripts) {
                     <div class="script-preview" id="preview-${script.id}">${previewText}</div>
                     <div class="script-full" id="full-${script.id}" style="display: none;">${processedContent.replace(/\n/g, '<br>')}</div>
                     <div class="script-actions mt-2">
-                        <button class="btn btn-link btn-sm p-0 me-3" onclick="toggleScriptExpand(${script.id})" id="toggle-${script.id}">
-                            <i class="fas fa-chevron-down"></i> Show more
-                        </button>
-                        <button class="btn btn-link btn-sm p-0 me-3" onclick="editScript(${script.id})">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="script-action-links">
+                                <button class="btn btn-link btn-sm p-0 me-3" onclick="toggleScriptExpand(${script.id})" id="toggle-${script.id}">
+                                    <i class="fas fa-chevron-down"></i> Show more
+                                </button>
+                                <button class="btn btn-link btn-sm p-0 me-3" onclick="editScript(${script.id})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteScript(${script.id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteScript(${script.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
             </div>
         `;
     });
@@ -2180,4 +2278,11 @@ function saveCallLogStreamlined() {
         showAlert('Error logging call. Please try again.', 'danger');
     });
 } 
+
+// Initialize the application
+document.addEventListener('DOMContentLoaded', function() {
+    initDarkMode();
+    loadInitialRepresentatives();
+    loadScripts();
+});
 
