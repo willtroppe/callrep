@@ -2732,17 +2732,7 @@ async function autoPopulateRepresentatives() {
         return;
     }
     
-    // Show minimal loading state first
-    const container = document.getElementById('representativesList');
-    container.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border text-primary mb-3" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <h5>Checking for available data...</h5>
-        </div>
-    `;
-    
+    // Don't show any loading message - just go straight to the API call
     try {
         const response = await fetch(`/api/representatives/${zipCode}/suggestions`, {
             method: 'POST',
@@ -2754,7 +2744,8 @@ async function autoPopulateRepresentatives() {
         const data = await response.json();
         
         if (response.ok && data.success && data.suggested_representatives) {
-            // Only show the "finding representatives" message when we actually found them
+            // Only show loading message when we actually found representatives
+            const container = document.getElementById('representativesList');
             container.innerHTML = `
                 <div class="text-center">
                     <div class="spinner-border text-primary mb-3" role="status">
@@ -2773,14 +2764,14 @@ async function autoPopulateRepresentatives() {
             showAlert('Representatives already exist for this zip code. Loading existing data...', 'info');
             loadRepresentatives(); // Load the existing representatives
         } else {
-            // No suggestions available - go directly to manual entry without confusing messaging
-            showAlert(data.message || 'No representative data available for this zip code. Please add manually.', 'info');
+            // No suggestions available - go directly to manual entry
+            showAlert('No representative data available for this zip code. Please add manually.', 'info');
             showAddRepForm();
         }
         
     } catch (error) {
         console.error('Error getting suggestions:', error);
-        showAlert('Error checking for representative data. Please add manually.', 'error');
+        showAlert('Error getting representative data. Please add manually.', 'error');
         showAddRepForm();
     }
 }
