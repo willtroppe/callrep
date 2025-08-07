@@ -233,6 +233,97 @@ def create_new_database():
         print(f"❌ Database creation failed: {e}")
         return False
 
+def populate_suggestion_database():
+    """Populate the suggestion database with sample representative data - SAFE: won't duplicate"""
+    try:
+        # Import app components
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from app import app, db, RepresentativeSuggestion, RepresentativeSuggestionPhone
+        from datetime import datetime, timezone
+        
+        with app.app_context():
+            # Check if suggestions already exist
+            existing_suggestions = RepresentativeSuggestion.query.count()
+            
+            if existing_suggestions > 0:
+                print(f"✅ Found {existing_suggestions} existing suggestions - no changes needed")
+                return True
+            
+            print("📍 Populating suggestion database with sample representative data...")
+            
+            # Direct phone numbers for senators and representatives
+            direct_phones = {
+                # Senators
+                'Alex Padilla': '(202) 224-3553',
+                'Adam Schiff': '(202) 224-3841',
+                'Mark Warner': '(202) 224-2023',
+                'Tim Kaine': '(202) 224-4024',
+                'John Cornyn': '(202) 224-2934',
+                'Ted Cruz': '(202) 224-5922',
+                'Marco Rubio': '(202) 224-3041',
+                'Rick Scott': '(202) 224-5274',
+                'Chuck Schumer': '(202) 224-6542',
+                'Kirsten Gillibrand': '(202) 224-4451'
+            }
+            
+            # Sample zip codes by state
+            state_zip_codes = {
+                'CA': ['90210', '94102', '92101'],
+                'VA': ['22205', '22206', '22207'],
+                'TX': ['77001', '77002', '77003'],
+                'FL': ['33101', '33102', '33103'],
+                'NY': ['10001', '10002', '10003']
+            }
+            
+            # Add senators for each state
+            senators_by_state = {
+                'CA': [('Alex', 'Padilla'), ('Adam', 'Schiff')],
+                'VA': [('Mark', 'Warner'), ('Tim', 'Kaine')],
+                'TX': [('John', 'Cornyn'), ('Ted', 'Cruz')],
+                'FL': [('Marco', 'Rubio'), ('Rick', 'Scott')],
+                'NY': [('Chuck', 'Schumer'), ('Kirsten', 'Gillibrand')]
+            }
+            
+            suggestions_added = 0
+            
+            for state, senators in senators_by_state.items():
+                zip_codes = state_zip_codes.get(state, [])
+                for zip_code in zip_codes:
+                    for first_name, last_name in senators:
+                        full_name = f"{first_name} {last_name}"
+                        direct_phone = direct_phones.get(full_name, '(202) 224-3121')
+                        
+                        suggestion = RepresentativeSuggestion(
+                            zip_code=zip_code,
+                            first_name=first_name,
+                            last_name=last_name,
+                            position='Senator',
+                            state=state,
+                            district='',
+                            source='congress_gov'
+                        )
+                        
+                        db.session.add(suggestion)
+                        db.session.flush()
+                        
+                        phone = RepresentativeSuggestionPhone(
+                            representative_suggestion_id=suggestion.id,
+                            phone=direct_phone,
+                            extension='',
+                            phone_type='DC Office' if direct_phone != '(202) 224-3121' else 'Senate Switchboard'
+                        )
+                        db.session.add(phone)
+                        
+                        suggestions_added += 1
+            
+            db.session.commit()
+            print(f"✅ Successfully added {suggestions_added} suggestions to database")
+            return True
+            
+    except Exception as e:
+        print(f"❌ Error populating suggestion database: {e}")
+        return False
+
 def ensure_94102_representatives():
     """Ensure 94102 representatives are present in the database - SAFE: won't duplicate"""
     try:
@@ -391,12 +482,17 @@ def main():
         print("❌ Database check failed")
         return
     
-    # Step 4: Ensure 94102 representatives are present (SAFE - won't duplicate)
+    # Step 4: Populate suggestion database (SAFE - won't duplicate)
+    print("\n💡 Ensuring suggestion database is populated...")
+    if not populate_suggestion_database():
+        print("⚠️ Warning: Failed to populate suggestion database, but continuing...")
+    
+    # Step 5: Ensure 94102 representatives are present (SAFE - won't duplicate)
     print("\n👥 Ensuring 94102 representatives are available...")
     if not ensure_94102_representatives():
         print("⚠️ Warning: Failed to ensure 94102 representatives, but continuing...")
     
-    # Step 5: Set file permissions
+    # Step 6: Set file permissions
     print("\n🔐 Setting file permissions...")
     db_path = Path("instance/rep_contacts.db")
     if db_path.exists():
