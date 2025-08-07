@@ -75,7 +75,7 @@ def migrate_database():
         return False
 
 def create_new_database():
-    """Create new database with current schema"""
+    """Create new database with current schema - ONLY if database doesn't exist"""
     try:
         # Import app components
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -83,8 +83,18 @@ def create_new_database():
         from datetime import datetime, timezone
         
         with app.app_context():
-            print("🗄️ Creating database tables...")
+            print("🗄️ Creating database tables (safe - won't overwrite existing data)...")
             db.create_all()
+            
+            # SAFETY CHECK: Only add data if database is completely empty
+            existing_reps = Representative.query.first()
+            existing_logs = CallLog.query.first()
+            
+            if existing_reps or existing_logs:
+                print("✅ Database already contains data - skipping data initialization to preserve existing data")
+                print(f"   Found representatives: {Representative.query.count()}")
+                print(f"   Found call logs: {CallLog.query.count()}")
+                return True
             
             print("👥 Adding real representatives for zip code 94102...")
             
@@ -224,7 +234,7 @@ def create_new_database():
         return False
 
 def ensure_94102_representatives():
-    """Ensure 94102 representatives are present in the database"""
+    """Ensure 94102 representatives are present in the database - SAFE: won't duplicate"""
     try:
         # Import app components
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -236,10 +246,13 @@ def ensure_94102_representatives():
             existing_94102_reps = Representative.query.filter_by(zip_code='94102', deleted_at=None).all()
             
             if existing_94102_reps:
-                print(f"✅ Found {len(existing_94102_reps)} existing representatives for 94102")
+                print(f"✅ Found {len(existing_94102_reps)} existing representatives for 94102 - no changes needed")
+                for rep in existing_94102_reps:
+                    phone_count = RepresentativePhone.query.filter_by(representative_id=rep.id, deleted_at=None).count()
+                    print(f"   - {rep.first_name} {rep.last_name} ({rep.position}) - {phone_count} phone numbers")
                 return True
             
-            print("📍 Adding representatives for zip code 94102...")
+            print("📍 Adding representatives for zip code 94102 (first time setup)...")
             
             # Add Nancy Pelosi (Representative)
             nancy_pelosi = Representative(
@@ -331,8 +344,9 @@ def ensure_94102_representatives():
         return False
 
 def main():
-    """Main deployment process"""
-    print("🚀 Starting automated deployment to PythonAnywhere...")
+    """Main deployment process - SAFE: preserves all existing data"""
+    print("🚀 Starting SAFE automated deployment to PythonAnywhere...")
+    print("⚠️  This deployment will NEVER overwrite existing data")
     print("=" * 60)
     
     # Step 1: Pull latest changes
@@ -357,35 +371,44 @@ def main():
     else:
         print("✅ All dependencies installed successfully")
     
-    # Step 3: Handle database
+    # Step 3: Handle database (SAFE - won't overwrite)
+    print("\n🗄️ Checking database status...")
     db_status = check_database_schema()
     
     if db_status == "create":
+        print("📊 Database doesn't exist - creating new one with sample data")
         if not create_new_database():
             print("❌ Database creation failed")
             return
     elif db_status == "migrate":
+        print("🔄 Database needs migration - updating schema safely")
         if not migrate_database():
             print("❌ Database migration failed")
             return
+    elif db_status == "current":
+        print("✅ Database schema is current - no changes needed")
     elif db_status == "error":
         print("❌ Database check failed")
         return
     
-    # Step 4: Ensure 94102 representatives are present
+    # Step 4: Ensure 94102 representatives are present (SAFE - won't duplicate)
+    print("\n👥 Ensuring 94102 representatives are available...")
     if not ensure_94102_representatives():
         print("⚠️ Warning: Failed to ensure 94102 representatives, but continuing...")
     
     # Step 5: Set file permissions
+    print("\n🔐 Setting file permissions...")
     db_path = Path("instance/rep_contacts.db")
     if db_path.exists():
         run_command("chmod 666 instance/rep_contacts.db", "Setting database file permissions")
     
     # Step 6: Clear any cached files
+    print("\n🧹 Cleaning up...")
     run_command("find . -name '*.pyc' -delete", "Clearing Python cache files")
     
-    print("=" * 60)
-    print("✅ Automated deployment completed!")
+    print("\n" + "=" * 60)
+    print("✅ SAFE automated deployment completed!")
+    print("🛡️  All existing data has been preserved")
     print("📋 Next steps:")
     print("   1. Go to PythonAnywhere dashboard")
     print("   2. Navigate to Web tab")
