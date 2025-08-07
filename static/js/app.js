@@ -2732,15 +2732,14 @@ async function autoPopulateRepresentatives() {
         return;
     }
     
-    // Show loading state
+    // Show minimal loading state first
     const container = document.getElementById('representativesList');
     container.innerHTML = `
         <div class="text-center">
             <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
-            <h5>Finding your representatives...</h5>
-            <p class="text-muted">We're looking up your senators and representative using official government data.</p>
+            <h5>Checking for available data...</h5>
         </div>
     `;
     
@@ -2755,20 +2754,33 @@ async function autoPopulateRepresentatives() {
         const data = await response.json();
         
         if (response.ok && data.success && data.suggested_representatives) {
-            showSuggestedRepresentatives(data.suggested_representatives, zipCode);
+            // Only show the "finding representatives" message when we actually found them
+            container.innerHTML = `
+                <div class="text-center">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h5>Found your representatives!</h5>
+                    <p class="text-muted">Loading ${data.suggested_representatives.length} representatives from official government data...</p>
+                </div>
+            `;
+            // Small delay to show the success message
+            setTimeout(() => {
+                showSuggestedRepresentatives(data.suggested_representatives, zipCode);
+            }, 500);
         } else if (response.status === 400 && data.error && data.error.includes('already exist')) {
             // Representatives already exist in production database
             showAlert('Representatives already exist for this zip code. Loading existing data...', 'info');
             loadRepresentatives(); // Load the existing representatives
         } else {
-            // Fallback to manual entry
-            showAlert(data.message || 'Could not find suggestions. Please add manually.', 'info');
+            // No suggestions available - go directly to manual entry without confusing messaging
+            showAlert(data.message || 'No representative data available for this zip code. Please add manually.', 'info');
             showAddRepForm();
         }
         
     } catch (error) {
         console.error('Error getting suggestions:', error);
-        showAlert('Error getting suggestions. Please add manually.', 'error');
+        showAlert('Error checking for representative data. Please add manually.', 'error');
         showAddRepForm();
     }
 }

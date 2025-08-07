@@ -223,6 +223,113 @@ def create_new_database():
         print(f"❌ Database creation failed: {e}")
         return False
 
+def ensure_94102_representatives():
+    """Ensure 94102 representatives are present in the database"""
+    try:
+        # Import app components
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from app import app, db, Representative, RepresentativePhone
+        from datetime import datetime, timezone
+        
+        with app.app_context():
+            # Check if 94102 representatives already exist
+            existing_94102_reps = Representative.query.filter_by(zip_code='94102', deleted_at=None).all()
+            
+            if existing_94102_reps:
+                print(f"✅ Found {len(existing_94102_reps)} existing representatives for 94102")
+                return True
+            
+            print("📍 Adding representatives for zip code 94102...")
+            
+            # Add Nancy Pelosi (Representative)
+            nancy_pelosi = Representative(
+                zip_code='94102',
+                first_name='Nancy',
+                last_name='Pelosi',
+                position='Representative',
+                custom_position=None
+            )
+            db.session.add(nancy_pelosi)
+            db.session.flush()
+            
+            # Add phone numbers for Nancy Pelosi
+            pelosi_dc_phone = RepresentativePhone(
+                representative_id=nancy_pelosi.id,
+                phone='(202) 225-4965',
+                extension='1',
+                phone_type='DC Office'
+            )
+            pelosi_district_phone = RepresentativePhone(
+                representative_id=nancy_pelosi.id,
+                phone='(415) 556-4862',
+                extension='5',
+                phone_type='District Office'
+            )
+            db.session.add(pelosi_dc_phone)
+            db.session.add(pelosi_district_phone)
+            
+            # Add Alex Padilla (Senator)
+            alex_padilla = Representative(
+                zip_code='94102',
+                first_name='Alex',
+                last_name='Padilla',
+                position='Senator',
+                custom_position=None
+            )
+            db.session.add(alex_padilla)
+            db.session.flush()
+            
+            # Add phone numbers for Alex Padilla
+            padilla_dc_phone = RepresentativePhone(
+                representative_id=alex_padilla.id,
+                phone='(202) 224-3553',
+                extension='2',
+                phone_type='DC Office'
+            )
+            padilla_district_phone = RepresentativePhone(
+                representative_id=alex_padilla.id,
+                phone='(415) 981-9369',
+                extension='',
+                phone_type='District Office'
+            )
+            db.session.add(padilla_dc_phone)
+            db.session.add(padilla_district_phone)
+            
+            # Add Adam Schiff (Senator)
+            adam_schiff = Representative(
+                zip_code='94102',
+                first_name='Adam',
+                last_name='Schiff',
+                position='Senator',
+                custom_position=None
+            )
+            db.session.add(adam_schiff)
+            db.session.flush()
+            
+            # Add phone numbers for Adam Schiff
+            schiff_dc_phone = RepresentativePhone(
+                representative_id=adam_schiff.id,
+                phone='(202) 224-3841',
+                extension='1',
+                phone_type='DC Office'
+            )
+            schiff_district_phone = RepresentativePhone(
+                representative_id=adam_schiff.id,
+                phone='(310) 914-7300',
+                extension='',
+                phone_type='District Office'
+            )
+            db.session.add(schiff_dc_phone)
+            db.session.add(schiff_district_phone)
+            
+            db.session.commit()
+            print("✅ Successfully added 3 representatives for zip code 94102")
+            return True
+            
+    except Exception as e:
+        print(f"❌ Error ensuring 94102 representatives: {e}")
+        return False
+
 def main():
     """Main deployment process"""
     print("🚀 Starting automated deployment to PythonAnywhere...")
@@ -265,12 +372,16 @@ def main():
         print("❌ Database check failed")
         return
     
-    # Step 4: Set file permissions
+    # Step 4: Ensure 94102 representatives are present
+    if not ensure_94102_representatives():
+        print("⚠️ Warning: Failed to ensure 94102 representatives, but continuing...")
+    
+    # Step 5: Set file permissions
     db_path = Path("instance/rep_contacts.db")
     if db_path.exists():
         run_command("chmod 666 instance/rep_contacts.db", "Setting database file permissions")
     
-    # Step 5: Clear any cached files
+    # Step 6: Clear any cached files
     run_command("find . -name '*.pyc' -delete", "Clearing Python cache files")
     
     print("=" * 60)
