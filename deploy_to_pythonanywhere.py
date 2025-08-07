@@ -88,24 +88,26 @@ def create_new_database():
             
             print("👥 Adding real representatives for zip code 94102...")
             
-            # Add Nancy Pelosi
-            pelosi = Representative(
+            # Add Nancy Pelosi (Representative)
+            nancy_pelosi = Representative(
                 zip_code='94102',
                 first_name='Nancy',
                 last_name='Pelosi',
-                position='Representative'
+                position='Representative',
+                custom_position=None
             )
-            db.session.add(pelosi)
+            db.session.add(nancy_pelosi)
             db.session.flush()
             
+            # Add phone numbers for Nancy Pelosi
             pelosi_dc_phone = RepresentativePhone(
-                representative_id=pelosi.id,
+                representative_id=nancy_pelosi.id,
                 phone='(202) 225-4965',
                 extension='1',
                 phone_type='DC Office'
             )
             pelosi_district_phone = RepresentativePhone(
-                representative_id=pelosi.id,
+                representative_id=nancy_pelosi.id,
                 phone='(415) 556-4862',
                 extension='5',
                 phone_type='District Office'
@@ -113,24 +115,26 @@ def create_new_database():
             db.session.add(pelosi_dc_phone)
             db.session.add(pelosi_district_phone)
             
-            # Add Alex Padilla
-            padilla = Representative(
+            # Add Alex Padilla (Senator)
+            alex_padilla = Representative(
                 zip_code='94102',
                 first_name='Alex',
                 last_name='Padilla',
-                position='Senator'
+                position='Senator',
+                custom_position=None
             )
-            db.session.add(padilla)
+            db.session.add(alex_padilla)
             db.session.flush()
             
+            # Add phone numbers for Alex Padilla
             padilla_dc_phone = RepresentativePhone(
-                representative_id=padilla.id,
+                representative_id=alex_padilla.id,
                 phone='(202) 224-3553',
                 extension='2',
                 phone_type='DC Office'
             )
             padilla_district_phone = RepresentativePhone(
-                representative_id=padilla.id,
+                representative_id=alex_padilla.id,
                 phone='(415) 981-9369',
                 extension='',
                 phone_type='District Office'
@@ -138,24 +142,26 @@ def create_new_database():
             db.session.add(padilla_dc_phone)
             db.session.add(padilla_district_phone)
             
-            # Add Adam Schiff
-            schiff = Representative(
+            # Add Adam Schiff (Senator)
+            adam_schiff = Representative(
                 zip_code='94102',
                 first_name='Adam',
                 last_name='Schiff',
-                position='Senator'
+                position='Senator',
+                custom_position=None
             )
-            db.session.add(schiff)
+            db.session.add(adam_schiff)
             db.session.flush()
             
+            # Add phone numbers for Adam Schiff
             schiff_dc_phone = RepresentativePhone(
-                representative_id=schiff.id,
+                representative_id=adam_schiff.id,
                 phone='(202) 224-3841',
                 extension='1',
                 phone_type='DC Office'
             )
             schiff_district_phone = RepresentativePhone(
-                representative_id=schiff.id,
+                representative_id=adam_schiff.id,
                 phone='(310) 914-7300',
                 extension='',
                 phone_type='District Office'
@@ -228,8 +234,21 @@ def main():
         return
     
     # Step 2: Install/update dependencies
-    if not run_command("pip install --user python-dotenv==1.0.0", "Installing python-dotenv dependency"):
-        print("⚠️ Dependency installation failed, but continuing...")
+    print("📦 Installing all dependencies from requirements.txt...")
+    if not run_command("pip3.10 install --user -r requirements.txt", "Installing all dependencies"):
+        print("⚠️ Full requirements installation failed, trying individual packages...")
+        # Fallback: install critical packages individually
+        critical_packages = [
+            "Flask==2.3.3",
+            "Flask-SQLAlchemy==3.0.5", 
+            "Flask-CORS==4.0.0",
+            "python-dotenv==1.0.0",
+            "requests==2.31.0"
+        ]
+        for package in critical_packages:
+            run_command(f"pip3.10 install --user {package}", f"Installing {package}")
+    else:
+        print("✅ All dependencies installed successfully")
     
     # Step 3: Handle database
     db_status = check_database_schema()
