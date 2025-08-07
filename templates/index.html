@@ -36,7 +36,7 @@
         <div class="row">
             <div class="col-12">
                 <!-- Navigation Tabs -->
-                <ul class="nav nav-tabs mb-4 glassmorphic-tabs" id="mainTabs" role="tablist">
+                <ul class="nav nav-tabs mb-3 glassmorphic-tabs" id="mainTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="make-calls-tab" data-bs-toggle="tab" data-bs-target="#make-calls" type="button" role="tab">
                             <i class="fas fa-phone me-2"></i>Call
@@ -63,7 +63,7 @@
                         <div class="row">
                             <div class="col-12">
                                 <!-- Step 1: Zip Code Input -->
-                                <div class="card mb-4">
+                                <div class="card mb-3">
                                     <div class="card-header">
                                         <h5 class="mb-0">
                                             <i class="fas fa-map-marker-alt me-2"></i>
@@ -85,7 +85,7 @@
                                 </div>
 
                                 <!-- Step 2: Representatives Section -->
-                                <div class="card mb-4" id="representativesSection">
+                                <div class="card mb-3" id="representativesSection">
                                     <div class="card-header">
                                         <h5 class="mb-0 d-flex align-items-center">
                                             <i class="fas fa-users me-2"></i>
@@ -188,7 +188,7 @@
                                 </div>
 
                                 <!-- Step 3: Call Scripts Section -->
-                                <div class="card mb-4" id="scriptsSection">
+                                <div class="card mb-3" id="scriptsSection">
                                     <div class="card-header">
                                         <h5 class="mb-0">
                                             <i class="fas fa-file-alt me-2"></i>
@@ -214,27 +214,27 @@
                                         </h6>
                                         
                                         <!-- Create Options -->
-                                        <div id="createOptions" class="mb-4">
-                                            <p class="text-muted mb-3">Choose how to create your script:</p>
-                                            <div class="d-flex gap-3">
-                                                <button type="button" class="btn btn-primary" onclick="showManualScriptForm()">
-                                                    <i class="fas fa-edit me-2"></i>Create Manually
+                                        <div id="createOptions" class="mb-3">
+                                            <p class="text-muted mb-2">Choose how to create your script:</p>
+                                            <div class="d-flex gap-2">
+                                                <button type="button" class="btn btn-primary btn-sm" onclick="showManualScriptForm()">
+                                                    <i class="fas fa-edit me-1"></i>Create Manually
                                                 </button>
-                                                <button type="button" class="btn btn-success" onclick="openGenerateScriptModal()">
-                                                    <i class="fas fa-magic me-2"></i>Generate with AI
+                                                <button type="button" class="btn btn-success btn-sm" onclick="openGenerateScriptModal()">
+                                                    <i class="fas fa-magic me-1"></i>Generate with AI
                                                 </button>
                                             </div>
                                         </div>
 
                                         <!-- Manual Script Form (hidden by default) -->
                                         <div id="manualScriptForm" style="display: none;">
-                                            <div class="row mb-3">
+                                            <div class="row mb-2">
                                                 <div class="col-md-12">
-                                                    <input type="text" class="form-control" id="scriptTitle" placeholder="Script Title">
+                                                    <input type="text" class="form-control form-control-sm" id="scriptTitle" placeholder="Script Title">
                                                 </div>
                                             </div>
                                             <div class="mb-3">
-                                                <textarea class="form-control" id="scriptContent" rows="6" placeholder="Enter your call script here..."></textarea>
+                                                <textarea class="form-control" id="scriptContent" rows="5" placeholder="Enter your call script here..."></textarea>
                                                 <small class="text-muted mt-1 d-block">
                                                     <i class="fas fa-info-circle me-1"></i>
                                                     You can use these reference parameters: <code>@RepType</code> (Representative/Senator), <code>@LastName</code> (representative's last name), <code>@ZipCode</code> (your zip code)
@@ -253,7 +253,7 @@
                                 </div>
 
                                 <!-- Step 4: Make Your Calls -->
-                                <div class="card mb-4" id="callSection">
+                                <div class="card mb-3" id="callSection">
                                     <div class="card-header">
                                         <h5 class="mb-0">
                                             <i class="fas fa-phone-alt me-2"></i>
@@ -366,18 +366,18 @@
                                     </div>
                                     <div class="card-body">
                                         <!-- Filters -->
-                                        <div class="row mb-4">
+                                        <div class="row mb-3 align-items-end">
                                             <div class="col-md-2">
-                                                <label class="form-label">Start Date</label>
-                                                <input type="date" class="form-control" id="startDate">
+                                                <label class="form-label mb-1">Start Date</label>
+                                                <input type="date" class="form-control form-control-sm" id="startDate">
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label">End Date</label>
-                                                <input type="date" class="form-control" id="endDate">
+                                                <label class="form-label mb-1">End Date</label>
+                                                <input type="date" class="form-control form-control-sm" id="endDate">
                                             </div>
                                             <div class="col-md-2">
-                                                <label class="form-label">Outcome</label>
-                                                <select class="form-control" id="outcomeFilter">
+                                                <label class="form-label mb-1">Outcome</label>
+                                                <select class="form-control form-control-sm" id="outcomeFilter">
                                                     <option value="">All Outcomes</option>
                                                     <option value="person">Spoke to Person</option>
                                                     <option value="voicemail">Left Voicemail</option>
@@ -385,8 +385,7 @@
                                                 </select>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label">&nbsp;</label>
-                                                <div class="form-check">
+                                                <div class="form-check mt-2">
                                                     <input class="form-check-input" type="checkbox" id="includeTestData" checked>
                                                     <label class="form-check-label" for="includeTestData">
                                                         Include Test Data
@@ -394,20 +393,19 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
-                                                <label class="form-label">&nbsp;</label>
-                                                <button class="btn btn-primary d-block" onclick="loadCallAnalytics()">
-                                                    <i class="fas fa-filter me-2"></i>Apply Filters
+                                                <button class="btn btn-primary btn-sm" onclick="loadCallAnalytics()">
+                                                    <i class="fas fa-filter me-1"></i>Apply Filters
                                                 </button>
                                             </div>
                                         </div>
 
                                         <!-- Statistics Cards -->
-                                        <div class="row mb-4" id="statsCards">
+                                        <div class="row mb-3" id="statsCards">
                                             <!-- Stats will be populated here -->
                                         </div>
 
                                         <!-- Charts -->
-                                        <div class="row mb-4">
+                                        <div class="row mb-3">
                                             <div class="col-md-6">
                                                 <div class="card">
                                                     <div class="card-header">
@@ -431,7 +429,7 @@
                                         </div>
                                         
                                         <!-- Additional Charts -->
-                                        <div class="row mb-4">
+                                        <div class="row mb-3">
                                             <div class="col-md-6">
                                                 <div class="card">
                                                     <div class="card-header">
@@ -497,32 +495,32 @@
                                         </h5>
                                     </div>
                                     <div class="card-body">
-                                        <div class="row">
+                                        <div class="row tips-section">
                                             <div class="col-lg-6">
                                                 <h6><i class="fas fa-clock me-2 text-primary"></i>1. Keep It Short — 1-2 Minutes Max</h6>
-                                                <p class="mb-3">Staffers are busy and take many calls daily. Get to the point quickly and clearly. A concise, respectful message is more likely to be noted and logged.</p>
+                                                <p>Staffers are busy and take many calls daily. Get to the point quickly and clearly. A concise, respectful message is more likely to be noted and logged.</p>
 
                                                 <h6><i class="fas fa-bullseye me-2 text-primary"></i>2. Focus on One Topic per Call</h6>
-                                                <p class="mb-3">Stick to a single issue per contact to avoid diluting your message. If you care about multiple topics, call back again later — that's perfectly okay.</p>
+                                                <p>Stick to a single issue per contact to avoid diluting your message. If you care about multiple topics, call back again later — that's perfectly okay.</p>
 
                                                 <h6><i class="fas fa-id-card me-2 text-primary"></i>3. State Who You Are Clearly</h6>
-                                                <p class="mb-3">Mention that you're a constituent — this matters most. Include your ZIP code or city to show you're in their district.</p>
+                                                <p>Mention that you're a constituent — this matters most. Include your ZIP code or city to show you're in their district.</p>
 
                                                 <h6><i class="fas fa-hand-point-right me-2 text-primary"></i>4. Make a Specific Ask</h6>
-                                                <p class="mb-3">Don't just say "I support climate action" — say: <em>"I'm calling to ask Representative [Name] to vote yes on [Bill Number or Issue Name]."</em> If you don't have a bill number, still be as specific as possible.</p>
+                                                <p>Don't just say "I support climate action" — say: <em>"I'm calling to ask Representative [Name] to vote yes on [Bill Number or Issue Name]."</em> If you don't have a bill number, still be as specific as possible.</p>
 
                                                 <h6><i class="fas fa-handshake me-2 text-primary"></i>5. Be Polite, Not Passionless</h6>
-                                                <p class="mb-3">Staffers appreciate calm, respectful callers. It makes them more receptive. You can express concern or urgency, just avoid yelling or long rants.</p>
+                                                <p>Staffers appreciate calm, respectful callers. It makes them more receptive. You can express concern or urgency, just avoid yelling or long rants.</p>
                                             </div>
                                             <div class="col-lg-6">
                                                 <h6><i class="fas fa-user-edit me-2 text-primary"></i>6. Use Your Own Words (Even a Few)</h6>
-                                                <p class="mb-3">Scripts are helpful (and you can use them!), but even a slight personal touch makes it more powerful. E.g., "As someone who just had a baby, I care about paid leave" hits harder than just reading a script.</p>
+                                                <p>Scripts are helpful (and you can use them!), but even a slight personal touch makes it more powerful. E.g., "As someone who just had a baby, I care about paid leave" hits harder than just reading a script.</p>
 
                                                 <h6><i class="fas fa-voicemail me-2 text-primary"></i>7. You Can Call After Hours</h6>
-                                                <p class="mb-3">Leaving a voicemail is totally fine — and sometimes more convenient.</p>
+                                                <p>Leaving a voicemail is totally fine — and sometimes more convenient.</p>
 
                                                 <h6><i class="fas fa-envelope me-2 text-primary"></i>8. Follow Up in Writing</h6>
-                                                <p class="mb-4">Email or a physical letter can reinforce your message. Mention that you called too. Websites like resist.bot or 5calls.org can help automate this.</p>
+                                                <p class="mb-3">Email or a physical letter can reinforce your message. Mention that you called too. Websites like resist.bot or 5calls.org can help automate this.</p>
 
                                                 <div class="card bg-light">
                                                     <div class="card-header">

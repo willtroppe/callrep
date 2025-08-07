@@ -224,22 +224,21 @@ function displayRepresentatives(representatives) {
 
     representatives.forEach(rep => {
         html += `
-            <div class="representative-card mb-3" id="rep-${rep.id}">
+            <div class="representative-card" id="rep-${rep.id}">
                 <div class="rep-header">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6>${rep.full_name} <span class="position-badge">${rep.display_position}</span></h6>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-outline-success btn-sm" onclick="showAddPhoneForm(${rep.id})">
-                                <i class="fas fa-plus me-1"></i>
-                                Add Phone
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteRepresentative(${rep.id})">
-                                <i class="fas fa-trash me-1"></i>
-                                Delete
-                            </button>
-                        </div>
+                    <div class="rep-info">
+                        <h6 class="rep-name">${rep.full_name}</h6>
+                        <span class="position-badge">${rep.display_position}</span>
+                    </div>
+                    <div class="rep-actions">
+                        <button class="btn btn-outline-success btn-sm" onclick="showAddPhoneForm(${rep.id})" title="Add Phone">
+                            <i class="fas fa-plus"></i>
+                            <span class="d-none d-md-inline ms-1">Add Phone</span>
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteRepresentative(${rep.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                            <span class="d-none d-md-inline ms-1">Delete</span>
+                        </button>
                     </div>
                 </div>
                 
@@ -254,13 +253,17 @@ function displayRepresentatives(representatives) {
                         <div class="phone-content">
                             <input type="checkbox" id="radio-${rep.id}-${index}" 
                                    value="${rep.id}-${index}" onchange="selectPhoneNumber('${rep.id}', ${index}, '${rep.full_name}', '${phone.display_phone}', '${phone.phone_type}', '${phone.phone_link}', '${rep.display_position}')">
-                            <label for="radio-${rep.id}-${index}">
-                                <i class="fas fa-phone me-2"></i>
-                                <span class="phone-type">${phone.phone_type}:</span>
-                                <span class="phone-number">${phone.display_phone}</span>
+                            <label for="radio-${rep.id}-${index}" class="phone-label">
+                                <div class="phone-info">
+                                    <div class="phone-line">
+                                        <i class="fas fa-phone me-2"></i>
+                                        <span class="phone-type">${phone.phone_type}</span>
+                                    </div>
+                                    <div class="phone-number">${phone.display_phone}</div>
+                                </div>
                             </label>
                         </div>
-                        <button class="delete-btn" onclick="deletePhoneNumber(${rep.id}, ${phone.id})">
+                        <button class="delete-btn" onclick="deletePhoneNumber(${rep.id}, ${phone.id})" title="Delete Phone">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
@@ -690,51 +693,54 @@ function displayScripts(scripts) {
 
     allScripts = scripts; // Store all scripts globally
 
-    let html = '<div class="script-radio-group">';
+    let html = '<div class="script-cards-group">';
 
     scripts.forEach(script => {
         // Process reference parameters for full content
         const processedContent = processScriptReferences(script.content);
         
         html += `
-            <div class="script-radio-item" id="script-${script.id}" onclick="selectScriptById('${script.id}')">
-                <input type="radio" name="scriptSelection" id="radio-script-${script.id}"
-                       value="${script.id}" onchange="selectScriptById('${script.id}')">
-                <div class="script-radio-content">
-                    <div class="script-title" id="title-${script.id}">${script.title}</div>
-                    <div class="script-actions">
-                        <div class="script-action-links">
-                            <button class="btn btn-link btn-sm p-0 me-2" onclick="toggleScriptExpand(${script.id}); event.stopPropagation();" id="toggle-${script.id}">
-                                <i class="fas fa-chevron-down"></i> Show
-                            </button>
-                            <button class="btn btn-link btn-sm p-0 me-2" onclick="editScript(${script.id}); event.stopPropagation();" id="edit-${script.id}">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm p-0" onclick="event.stopPropagation(); deleteScript(${script.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+            <div class="script-card" id="script-${script.id}">
+                <div class="script-card-header" onclick="selectScriptById('${script.id}')">
+                    <div class="script-selection">
+                        <input type="radio" name="scriptSelection" id="radio-script-${script.id}"
+                               value="${script.id}" onchange="selectScriptById('${script.id}')">
+                        <label for="radio-script-${script.id}" class="script-title">${script.title}</label>
                     </div>
-                    <div class="script-full" id="full-${script.id}" style="display: none;">${processedContent.replace(/\n/g, '<br>')}</div>
-                    
-                    <!-- Inline edit form (hidden by default) -->
-                    <div class="script-edit-form" id="edit-form-${script.id}" style="display: none;">
-                        <div class="mb-3">
-                            <label class="form-label">Script Title</label>
-                            <input type="text" class="form-control" id="edit-title-${script.id}" value="${script.title}">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Script Content</label>
-                            <textarea class="form-control" id="edit-content-${script.id}" rows="6">${script.content}</textarea>
-                        </div>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${script.id}); event.stopPropagation();">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                            <button class="btn btn-success btn-sm" onclick="updateScript(${script.id}); event.stopPropagation();">
-                                <i class="fas fa-save"></i> Update
-                            </button>
-                        </div>
+                    <div class="script-actions">
+                        <button class="btn btn-outline-primary btn-sm" onclick="toggleScriptExpand(${script.id}); event.stopPropagation();" id="toggle-${script.id}">
+                            <i class="fas fa-chevron-down"></i> Show
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="editScript(${script.id}); event.stopPropagation();" id="edit-${script.id}">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteScript(${script.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="script-content" id="full-${script.id}" style="display: none;">
+                    <div class="script-text">${processedContent.replace(/\n/g, '<br>')}</div>
+                </div>
+                
+                <!-- Inline edit form (hidden by default) -->
+                <div class="script-edit-form" id="edit-form-${script.id}" style="display: none;">
+                    <div class="mb-2">
+                        <label class="form-label">Script Title</label>
+                        <input type="text" class="form-control form-control-sm" id="edit-title-${script.id}" value="${script.title}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Script Content</label>
+                        <textarea class="form-control" id="edit-content-${script.id}" rows="5">${script.content}</textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${script.id}); event.stopPropagation();">
+                            <i class="fas fa-times me-1"></i>Cancel
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="updateScript(${script.id}); event.stopPropagation();">
+                            <i class="fas fa-save me-1"></i>Update
+                        </button>
                     </div>
                 </div>
             </div>
