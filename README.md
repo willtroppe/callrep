@@ -1,144 +1,241 @@
-# Constituent Contact Management App
+# CallRep v1.0 🏛️
 
-A comprehensive web application for managing constituent outreach and call tracking for political campaigns, advocacy groups, and organizations.
+**Contact Your Representatives - Production Ready**
 
-## 🚀 Features
+A modern web application that helps citizens find and contact their political representatives with AI-powered call scripts and comprehensive call tracking.
 
-### Core Functionality
-- **Representative Management**: Add, edit, and manage contact information for elected officials
-- **Call Script Creation**: Create and manage call scripts with AI-powered generation
-- **Multi-Call Workflow**: Select multiple representatives and track call status
-- **Call Logging**: Log call outcomes, notes, and follow-up actions
-- **Analytics Dashboard**: Comprehensive analytics with charts and data visualization
+## ✨ Features
 
-### Key Features
-- **AI Script Generation**: Generate call scripts using local AI templates
-- **Mobile-Responsive Design**: Works seamlessly on desktop and mobile devices
-- **Real-time Analytics**: Track call patterns, outcomes, and effectiveness
-- **Data Export**: Export call logs and analytics data
-- **Multi-User Ready**: Architecture supports user management (coming soon)
+### 🎯 Core Functionality
+- **Representative Lookup**: Find your senators and representatives by zip code
+- **Auto-Population**: Intelligent suggestions from official government APIs
+- **Call Scripts**: AI-generated personalized call scripts
+- **Call Tracking**: Log and analyze your call outcomes
+- **Analytics Dashboard**: Track your civic engagement over time
 
-## 📊 Analytics Dashboard
+### 🛡️ Security & Reliability
+- **Input Validation**: Comprehensive validation for all user inputs
+- **Rate Limiting**: Protection against abuse (100 requests/hour per IP)
+- **XSS Prevention**: Input sanitization and secure output
+- **SQL Injection Protection**: ORM-based database queries
+- **CORS Configuration**: Secure cross-origin resource sharing
 
-The app includes a powerful analytics dashboard with:
-- **Call Outcome Analysis**: Person/Voicemail/Failed breakdown
-- **Call Volume Trends**: Daily call patterns over time
-- **Representative Analysis**: Calls by representative
-- **Script Usage**: Calls by script type
-- **Interactive Charts**: Beautiful visualizations using Chart.js
-
-## 🛠️ Technology Stack
-
-- **Backend**: Flask (Python)
-- **Database**: SQLite with SQLAlchemy ORM
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **UI Framework**: Bootstrap 5
-- **Charts**: Chart.js
-- **Icons**: Font Awesome
-- **Deployment**: Gunicorn (WSGI server)
+### 📱 User Experience
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Dark Mode**: Easy on the eyes interface
+- **Real-time Feedback**: Clear loading states and error messages
+- **Accessibility**: Keyboard navigation and screen reader support
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Python 3.8+
-- pip (Python package manager)
+- pip package manager
 
 ### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd rep_contact_app
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Run the application**
-   ```bash
-   python3 app.py
-   ```
-
-4. **Access the app**
-   - Open your browser to `http://localhost:8080`
-   - The app will automatically initialize with sample data
-
-## 📱 Usage
-
-### Making Calls
-1. **Step 1**: Enter your zip code to find representatives
-2. **Step 2**: Select representatives and phone numbers to call
-3. **Step 3**: Choose or create a call script
-4. **Step 4**: Execute calls and log outcomes
-
-### Analytics
-- Navigate to the "Analyze Calls" tab
-- View comprehensive analytics and charts
-- Filter data by date range and outcomes
-- Export call history and statistics
-
-## 🗄️ Database Schema
-
-### Core Tables
-- **Representatives**: Contact information for elected officials
-- **CallScripts**: Reusable call scripts and templates
-- **CallLogs**: Detailed call history and outcomes
-- **Users**: User management (coming soon)
-
-## 🔧 Configuration
-
-The app uses environment-based configuration:
-- **Development**: Debug mode enabled, local database
-- **Production**: Debug disabled, production database
-
-## 🚀 Deployment
-
-### Local Development
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd rep_contact_app
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set up environment
+cp env.example .env
+# Edit .env with your configuration
+
+# Initialize database
+python3 -c "from app import app, db; with app.app_context(): db.create_all()"
+python3 populate_suggestions.py
+
+# Run the application
 python3 app.py
 ```
 
 ### Production Deployment
+See [DEPLOYMENT.md](DEPLOYMENT.md) for comprehensive production setup instructions.
+
+## 🔧 Configuration
+
+### Environment Variables
 ```bash
-gunicorn -w 4 -b 0.0.0.0:8080 wsgi:app
+# Required
+SECRET_KEY=your-super-secret-key
+FLASK_ENV=production
+DATABASE_URL=sqlite:///instance/rep_contacts.db
+
+# Optional API Keys
+CONGRESS_API_KEY=your-congress-gov-api-key
+GOOGLE_CIVIC_API_KEY=your-google-civic-api-key
+OPENROUTER_API_KEY=your-openrouter-api-key
 ```
 
-## 📈 Roadmap
+## 📊 Database Schema
 
-- [ ] User authentication and management
-- [ ] Advanced analytics and reporting
-- [ ] Email integration for follow-ups
-- [ ] Mobile app development
-- [ ] API for third-party integrations
-- [ ] Advanced AI script generation
+### Core Tables
+- **Representative**: Human-validated representative data
+- **RepresentativePhone**: Phone numbers for representatives
+- **RepresentativeSuggestion**: API-sourced suggestion data
+- **CallScript**: AI-generated and user-created call scripts
+- **CallLog**: Comprehensive call tracking and analytics
+
+### Data Flow
+1. **Suggestion Database**: Populated from official APIs (Congress.gov, Google Civic)
+2. **Production Database**: Human-validated data only
+3. **User Workflow**: Review suggestions → Accept → Add to production
+
+## 🔌 API Integration
+
+### Supported APIs
+- **Congress.gov API**: Official congressional data
+- **Google Civic Information API**: Additional representative data
+- **OpenRouter API**: AI script generation (DeepSeek V3)
+
+### API Endpoints
+```
+GET  /api/representatives/<zip_code>           # Get representatives
+POST /api/representatives/<zip_code>/suggestions    # Get suggestions
+POST /api/representatives/<zip_code>/accept-suggestions  # Accept suggestions
+POST /api/representatives                        # Add representative
+POST /api/scripts                              # Create script
+POST /api/generate-script                      # Generate AI script
+POST /api/call-logs                            # Log call
+GET  /api/call-logs                            # Get call history
+GET  /api/call-logs/stats                      # Get analytics
+```
+
+## 🎨 User Interface
+
+### Key Components
+- **Zip Code Entry**: Simple zip code lookup
+- **Representative Cards**: Clean display of rep info and phone numbers
+- **Call Workflow**: Streamlined call process with status tracking
+- **Script Management**: Create, edit, and use call scripts
+- **Analytics Dashboard**: Visual call statistics and trends
+
+### Design Principles
+- **Simplicity**: Clean, intuitive interface
+- **Accessibility**: WCAG compliant design
+- **Responsiveness**: Mobile-first approach
+- **Performance**: Fast loading and smooth interactions
+
+## 🔒 Security Features
+
+### Input Validation
+- Zip code format validation (5 digits or 5+4 format)
+- Phone number validation and formatting
+- Name validation (letters, spaces, hyphens, apostrophes only)
+- XSS prevention through input sanitization
+
+### Security Headers
+- CORS configuration
+- Secure session cookies
+- Rate limiting (100 requests per hour per IP)
+- SQL injection prevention (SQLAlchemy ORM)
+
+## 📈 Analytics & Insights
+
+### Call Tracking
+- Call outcomes (person, voicemail, failed)
+- Call notes and follow-up tracking
+- Representative responsiveness metrics
+- Personal call history and trends
+
+### Dashboard Features
+- Call success rates over time
+- Most contacted representatives
+- Script effectiveness analysis
+- Civic engagement trends
+
+## 🛠️ Development
+
+### Project Structure
+```
+rep_contact_app/
+├── app.py                 # Main Flask application
+├── populate_suggestions.py # Database population script
+├── static/               # Frontend assets
+│   ├── js/app.js        # Main JavaScript application
+│   └── css/             # Stylesheets
+├── templates/            # HTML templates
+├── instance/            # Database files
+├── requirements.txt     # Python dependencies
+├── env.example         # Environment template
+├── DEPLOYMENT.md       # Production deployment guide
+└── README.md           # This file
+```
+
+### Key Technologies
+- **Backend**: Flask, SQLAlchemy, Python
+- **Frontend**: Vanilla JavaScript, Bootstrap 5, HTML5/CSS3
+- **Database**: SQLite (production-ready for PostgreSQL)
+- **APIs**: Congress.gov, Google Civic, OpenRouter
+
+## 🚨 Error Handling
+
+### User-Friendly Errors
+- Clear error messages for invalid inputs
+- Graceful handling of API failures
+- Helpful suggestions for common issues
+- Comprehensive logging for debugging
+
+### Monitoring
+- Application logs: `app.log`
+- Error tracking and alerting
+- Performance monitoring
+- Health check endpoints
+
+## 🔄 Updates & Maintenance
+
+### Version Control
+- Semantic versioning (v1.0.0)
+- Comprehensive change logs
+- Backward compatibility maintained
+
+### Database Migrations
+- Schema versioning
+- Data migration scripts
+- Backup and restore procedures
+
+## 📞 Support
+
+### Documentation
+- [Deployment Guide](DEPLOYMENT.md)
+- API Documentation (in-code comments)
+- User Guide (in-app help)
+
+### Troubleshooting
+- Common issues and solutions
+- Performance optimization tips
+- Security best practices
 
 ## 🤝 Contributing
 
+### Development Setup
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
 
+### Code Standards
+- Follow PEP 8 Python style guide
+- Add comprehensive comments
+- Include error handling
+- Test thoroughly
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🆘 Support
-
-For support and questions:
-- Create an issue in the GitHub repository
-- Contact the development team
-
 ## 🙏 Acknowledgments
 
-- Built with Flask and Bootstrap
-- Charts powered by Chart.js
-- Icons from Font Awesome
-- AI script generation using local templates
+- Congress.gov for official representative data
+- Google Civic Information API for additional data
+- OpenRouter for AI script generation
+- Bootstrap for the responsive UI framework
 
 ---
 
-**Built with ❤️ for effective constituent engagement** 
+**CallRep v1.0** - Making civic engagement easier, one call at a time. 🏛️📞 

@@ -1,5 +1,30 @@
+# CallRep v1.0 Production Dependencies
+
+# Core Flask Framework
 Flask==2.3.3
 Flask-SQLAlchemy==3.0.5
+Flask-CORS==4.0.0
+
+# Database
+SQLAlchemy>=2.0.25
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# HTTP Requests
 requests==2.31.0
+
+# Production WSGI Server (optional but recommended)
 gunicorn==21.2.0
-python-dotenv==1.0.0 
+
+# Security
+Werkzeug==2.3.7
+
+# Date/Time Handling
+python-dateutil==2.8.2
+
+# Development Dependencies (optional)
+# pytest==7.4.2
+# pytest-flask==1.2.0
+# black==23.9.1
+# flake8==6.1.0 

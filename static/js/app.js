@@ -9,14 +9,45 @@ async function loadRepresentatives() {
         return;
     }
     
+    // Client-side validation
+    const zipPattern = /^\d{5}(-\d{4})?$/;
+    if (!zipPattern.test(zipCode)) {
+        showAlert('Please enter a valid 5-digit US zip code (e.g., 12345) or 5+4 format (e.g., 12345-6789)', 'error');
+        return;
+    }
+    
     currentZipCode = zipCode;
     
-    // Show loading state
-    document.getElementById('representativesList').innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading representatives...</div>';
+    // Show loading state with enhanced message for first-time users
+    document.getElementById('representativesList').innerHTML = `
+        <div class="loading">
+            <i class="fas fa-spinner fa-spin me-2"></i> 
+            <div class="loading-text">
+                <strong>Loading your representatives...</strong><br>
+                <small class="text-muted">If this is your first time, we're automatically finding your representatives!</small>
+            </div>
+        </div>
+    `;
     document.getElementById('representativesSection').style.display = 'block';
     
     try {
         const response = await fetch(`/api/representatives/${zipCode}`);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            const errorMessage = errorData.error || 'Invalid zip code. Please enter a valid 5-digit US zip code.';
+            showAlert(errorMessage, 'error');
+            
+            // Clear the loading state
+            document.getElementById('representativesList').innerHTML = `
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Enter your zip code above to find your representatives.</strong>
+                </div>
+            `;
+            return;
+        }
+        
         const representatives = await response.json();
         
         displayRepresentatives(representatives);
@@ -32,9 +63,22 @@ async function loadRepresentatives() {
         document.getElementById('scriptsSection').style.display = 'block';
         showCallSection();
         
+        // Show success message for first-time users
+        if (representatives.length > 0) {
+            showAlert(`Found ${representatives.length} representative(s) for your area! 🎉`, 'success');
+        }
+        
     } catch (error) {
         console.error('Error loading representatives:', error);
         showAlert('Error loading representatives. Please try again.', 'error');
+        
+        // Clear the loading state
+        document.getElementById('representativesList').innerHTML = `
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Enter your zip code above to find your representatives.</strong>
+            </div>
+        `;
     }
 }
 
@@ -78,6 +122,18 @@ function initDarkMode() {
     }
 }
 
+// Add Enter key support for zip code input
+document.addEventListener('DOMContentLoaded', function() {
+    const zipCodeInput = document.getElementById('zipCode');
+    if (zipCodeInput) {
+        zipCodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadRepresentatives();
+            }
+        });
+    }
+});
+
 // Load representatives without requiring zip code (for initialization)
 async function loadInitialRepresentatives() {
     try {
@@ -106,15 +162,37 @@ function displayRepresentatives(representatives) {
     const addRepFormContainer = document.getElementById('addRepFormContainer');
     
     if (representatives.length === 0) {
+        // First-time user experience
         container.innerHTML = `
-            <div class="alert alert-success">
+            <div class="alert alert-success text-center mb-4">
                 <i class="fas fa-star me-2"></i>
-                <strong>Congratulations!</strong> You're the first user from this Zip Code. Please extend the dataset by adding your representative's information below!
+                <strong>Congratulations!</strong> You're the first person to use the CallRep app from this zip code!
+            </div>
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title mb-3">How would you like to add your representatives?</h5>
+                    <p class="card-text text-muted mb-4">We can help you find your representatives automatically, or you can add them manually.</p>
+                    <div class="d-grid gap-3 d-md-flex justify-content-md-center">
+                        <button class="btn btn-primary" onclick="autoPopulateRepresentatives()">
+                            <i class="fas fa-magic me-2"></i>
+                            Auto-Populate Representatives
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="showAddRepForm()">
+                            <i class="fas fa-plus me-2"></i>
+                            Add Manually
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="cancelRepresentativeSetup()">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
-        // Show the add rep form for new zip codes
+        
+        // Hide the add rep form initially
         addRepButtonContainer.style.display = 'none';
-        addRepFormContainer.style.display = 'block';
+        addRepFormContainer.style.display = 'none';
         return;
     }
     
@@ -123,6 +201,11 @@ function displayRepresentatives(representatives) {
     addRepFormContainer.style.display = 'none';
 
     let html = `
+        <div class="alert alert-success mb-3">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>Found ${representatives.length} representative(s) for your area!</strong>
+            <br><small class="text-muted">Your representatives are ready for calling. Select the phone numbers you'd like to call below.</small>
+        </div>
         <div class="mb-3 d-flex gap-2">
             <button class="btn btn-outline-primary btn-sm" id="selectAllBtn" onclick="selectAllPhones()">
                 <i class="fas fa-check-square me-1"></i>Select All
@@ -223,11 +306,30 @@ function displayRepresentatives(representatives) {
 
 // Add a new representative
 function showAddRepForm() {
-    const addRepButtonContainer = document.getElementById('addRepButtonContainer');
     const addRepFormContainer = document.getElementById('addRepFormContainer');
+    const addRepButtonContainer = document.getElementById('addRepButtonContainer');
     
-    addRepButtonContainer.style.display = 'none';
     addRepFormContainer.style.display = 'block';
+    addRepButtonContainer.style.display = 'none';
+    
+    // Update the form to include a cancel button
+    const form = addRepFormContainer.querySelector('form');
+    if (form) {
+        // Check if cancel button already exists
+        let cancelBtn = form.querySelector('.btn-outline-danger');
+        if (!cancelBtn) {
+            // Add cancel button to the form
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                cancelBtn = document.createElement('button');
+                cancelBtn.type = 'button';
+                cancelBtn.className = 'btn btn-outline-danger ms-2';
+                cancelBtn.innerHTML = '<i class="fas fa-times me-2"></i>Cancel';
+                cancelBtn.onclick = cancelRepresentativeSetup;
+                submitBtn.parentNode.appendChild(cancelBtn);
+            }
+        }
+    }
 }
 
 function hideAddRepForm() {
@@ -588,18 +690,18 @@ function displayScripts(scripts) {
         // Process reference parameters for full content
         const processedContent = processScriptReferences(script.content);
         
-                html += `
+        html += `
             <div class="script-radio-item" id="script-${script.id}" onclick="selectScriptById('${script.id}')">
                 <input type="radio" name="scriptSelection" id="radio-script-${script.id}"
                        value="${script.id}" onchange="selectScriptById('${script.id}')">
                 <div class="script-radio-content">
-                    <div class="script-title">${script.title}</div>
+                    <div class="script-title" id="title-${script.id}">${script.title}</div>
                     <div class="script-actions">
                         <div class="script-action-links">
                             <button class="btn btn-link btn-sm p-0 me-2" onclick="toggleScriptExpand(${script.id}); event.stopPropagation();" id="toggle-${script.id}">
                                 <i class="fas fa-chevron-down"></i> Show
                             </button>
-                            <button class="btn btn-link btn-sm p-0 me-2" onclick="editScript(${script.id}); event.stopPropagation();">
+                            <button class="btn btn-link btn-sm p-0 me-2" onclick="editScript(${script.id}); event.stopPropagation();" id="edit-${script.id}">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                             <button class="btn btn-outline-danger btn-sm p-0" onclick="event.stopPropagation(); deleteScript(${script.id})">
@@ -608,6 +710,26 @@ function displayScripts(scripts) {
                         </div>
                     </div>
                     <div class="script-full" id="full-${script.id}" style="display: none;">${processedContent.replace(/\n/g, '<br>')}</div>
+                    
+                    <!-- Inline edit form (hidden by default) -->
+                    <div class="script-edit-form" id="edit-form-${script.id}" style="display: none;">
+                        <div class="mb-3">
+                            <label class="form-label">Script Title</label>
+                            <input type="text" class="form-control" id="edit-title-${script.id}" value="${script.title}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Script Content</label>
+                            <textarea class="form-control" id="edit-content-${script.id}" rows="6">${script.content}</textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${script.id}); event.stopPropagation();">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="updateScript(${script.id}); event.stopPropagation();">
+                                <i class="fas fa-save"></i> Update
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -727,34 +849,49 @@ function toggleScriptExpand(scriptId) {
     }
 }
 
-// Edit an existing script
+// Edit an existing script (inline)
 function editScript(scriptId) {
     const script = allScripts.find(s => s.id === scriptId);
     if (!script) return;
     
-    // Populate form
-    document.getElementById('scriptTitle').value = script.title;
-    document.getElementById('scriptContent').value = script.content;
+    // Hide the script title and actions
+    const titleElement = document.getElementById(`title-${scriptId}`);
+    const actionsElement = document.querySelector(`#script-${scriptId} .script-actions`);
+    const editForm = document.getElementById(`edit-form-${scriptId}`);
     
-    // Change button to update mode
-    const saveButton = document.getElementById('saveScriptBtn');
-    saveButton.innerHTML = 'Update Script';
-    saveButton.onclick = () => updateScript(scriptId);
-    
-    // Set editing state
-    editingScriptId = scriptId;
-    
-    // Scroll to form
-    document.getElementById('scriptTitle').scrollIntoView({ behavior: 'smooth' });
+    if (titleElement && actionsElement && editForm) {
+        titleElement.style.display = 'none';
+        actionsElement.style.display = 'none';
+        editForm.style.display = 'block';
+        
+        // Focus on the title input
+        const titleInput = document.getElementById(`edit-title-${scriptId}`);
+        if (titleInput) {
+            titleInput.focus();
+        }
+    }
 }
 
-// Update an existing script
+// Cancel inline editing
+function cancelEdit(scriptId) {
+    const titleElement = document.getElementById(`title-${scriptId}`);
+    const actionsElement = document.querySelector(`#script-${scriptId} .script-actions`);
+    const editForm = document.getElementById(`edit-form-${scriptId}`);
+    
+    if (titleElement && actionsElement && editForm) {
+        titleElement.style.display = 'block';
+        actionsElement.style.display = 'block';
+        editForm.style.display = 'none';
+    }
+}
+
+// Update an existing script (inline)
 function updateScript(scriptId) {
-    const title = document.getElementById('scriptTitle').value.trim();
-    const content = document.getElementById('scriptContent').value.trim();
+    const title = document.getElementById(`edit-title-${scriptId}`).value.trim();
+    const content = document.getElementById(`edit-content-${scriptId}`).value.trim();
     
     if (!title || !content) {
-        alert('Please fill in both title and content');
+        showAlert('Please fill in both title and content', 'error');
         return;
     }
     
@@ -768,29 +905,44 @@ function updateScript(scriptId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Reset form
-            document.getElementById('scriptTitle').value = '';
-            document.getElementById('scriptContent').value = '';
+            // Update the script in the global array
+            const scriptIndex = allScripts.findIndex(s => s.id == scriptId);
+            if (scriptIndex !== -1) {
+                allScripts[scriptIndex].title = title;
+                allScripts[scriptIndex].content = content;
+            }
             
-            // Reset button to original state
-            const saveButton = document.getElementById('saveScriptBtn');
-            saveButton.innerHTML = 'Save Script';
-            saveButton.onclick = saveScript;
+            // Update the displayed title
+            const titleElement = document.getElementById(`title-${scriptId}`);
+            if (titleElement) {
+                titleElement.textContent = title;
+            }
             
-            // Clear editing state
-            editingScriptId = null;
+            // Hide the edit form and show the normal view
+            cancelEdit(scriptId);
             
-            // Reload scripts
-            loadScripts();
+            // Update the full script content if it's expanded
+            const fullScriptElement = document.getElementById(`full-${scriptId}`);
+            if (fullScriptElement) {
+                const processedContent = processScriptReferences(content);
+                fullScriptElement.innerHTML = processedContent.replace(/\n/g, '<br>');
+            }
             
-            alert('Script updated successfully!');
+            // Update selected script if it's the current one
+            if (selectedCallScript && selectedCallScript.id == scriptId) {
+                selectedCallScript.title = title;
+                selectedCallScript.content = content;
+                updateCallInfo();
+            }
+            
+            showAlert('Script updated successfully!', 'success');
         } else {
-            alert('Error updating script');
+            showAlert('Error updating script', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error updating script');
+        showAlert('Error updating script', 'error');
     });
 }
 
@@ -1462,6 +1614,24 @@ function updateCallInfo() {
 }
 
 // Update representative info in Step 4 using same tile as Step 2
+function updateCallProgressSummary() {
+    // This function is now deprecated - progress is shown on individual reps
+    // Keeping for backward compatibility but not using it
+}
+
+function checkAllCallsCompleted() {
+    const totalCalls = selectedPhones.length;
+    const completedCalls = selectedPhones.filter(phone => phone.status === 'completed').length;
+    
+    // Only show congratulatory message if we have calls and they're all completed
+    // But don't override the main status display in updateCallButton
+    if (totalCalls > 0 && completedCalls === totalCalls) {
+        // The main status display is handled in updateCallButton
+        // This function is now mainly for logging/debugging purposes
+        // All calls completed
+    }
+}
+
 function updateCallRepInfo() {
     const repInfo = document.getElementById('callRepInfo');
     const compactContainer = document.getElementById('compactRepList');
@@ -1485,10 +1655,14 @@ function updateCallRepInfo() {
         // Create tiles for each representative
         Object.keys(repsByPhone).forEach(repId => {
             const rep = repsByPhone[repId];
+            
             html += `
                 <div class="representative-tile mb-3">
                     <div class="rep-header">
-                        <h6 class="mb-2">${rep.repName} <span class="position-badge">${rep.repPosition}</span></h6>
+                        <h6 class="mb-2">
+                            ${rep.repName} 
+                            <span class="position-badge">${rep.repPosition}</span>
+                        </h6>
                     </div>
                     <div class="phone-list">
             `;
@@ -1499,31 +1673,37 @@ function updateCallRepInfo() {
                 
                 html += `
                     <div class="phone-item ${statusClass}" id="call-phone-${phone.repId}-${phone.phoneIndex}">
-                        <div class="phone-info">
-                            <i class="fas fa-phone me-2"></i>
-                            <span class="phone-type">${phone.phone_type}:</span>
-                            <span class="phone-number">${phone.display_phone}</span>
+                        <div class="phone-main-info">
+                            <div class="phone-label">
+                                <i class="fas fa-phone"></i>
+                                <span>${phone.phone_type}</span>
+                            </div>
+                            <div class="phone-number-display">${phone.display_phone}</div>
                         </div>
-                        <div class="phone-actions">
-                            <span class="status-badge ${statusClass}">
-                                <i class="${statusIcon}"></i>
-                                ${phone.status.charAt(0).toUpperCase() + phone.status.slice(1)}
-                            </span>
-                            ${phone.status === 'pending' ? `
-                                <button class="btn btn-primary btn-sm ms-2" onclick="setPhoneActive('${phone.repId}', ${phone.phoneIndex})">
-                                    <i class="fas fa-play"></i> Start Call
-                                </button>
-                            ` : ''}
-                            ${phone.status === 'active' ? `
-                                <button class="btn btn-success btn-sm ms-2" onclick="completePhoneCall('${phone.repId}', ${phone.phoneIndex})">
-                                    <i class="fas fa-check"></i> Complete
-                                </button>
-                            ` : ''}
-                            ${phone.status === 'completed' ? `
-                                <button class="btn btn-warning btn-sm ms-2" onclick="resetPhoneCall('${phone.repId}', ${phone.phoneIndex})">
-                                    <i class="fas fa-undo"></i> Reset
-                                </button>
-                            ` : ''}
+                        <div class="phone-status-section">
+                            <div class="status-indicator">
+                                <span class="status-badge ${statusClass}">
+                                    <i class="${statusIcon}"></i>
+                                    ${phone.status.charAt(0).toUpperCase() + phone.status.slice(1)}
+                                </span>
+                            </div>
+                            <div class="action-button">
+                                ${phone.status === 'pending' ? `
+                                    <button class="btn btn-primary btn-sm" onclick="setPhoneActive('${phone.repId}', ${phone.phoneIndex})">
+                                        <i class="fas fa-play"></i> Start
+                                    </button>
+                                ` : ''}
+                                ${phone.status === 'active' ? `
+                                    <button class="btn btn-success btn-sm" onclick="completePhoneCall('${phone.repId}', ${phone.phoneIndex})">
+                                        <i class="fas fa-check"></i> Complete
+                                    </button>
+                                ` : ''}
+                                ${phone.status === 'completed' ? `
+                                    <button class="btn btn-warning btn-sm" onclick="resetPhoneCall('${phone.repId}', ${phone.phoneIndex})">
+                                        <i class="fas fa-undo"></i> Reset
+                                    </button>
+                                ` : ''}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -1541,10 +1721,16 @@ function updateCallRepInfo() {
         // Update compact display
         let compactHtml = '';
         Object.values(repsByPhone).forEach(rep => {
+            const totalPhones = rep.phones.length;
+            const completedPhones = rep.phones.filter(phone => phone.status === 'completed').length;
+            const progressText = totalPhones > 0 ? `(${completedPhones}/${totalPhones})` : '';
+            const isAllCompleted = totalPhones > 0 && completedPhones === totalPhones;
+            
             compactHtml += `
                 <div class="compact-rep-item">
                     <span class="compact-rep-name">${rep.repName}</span>
                     <span class="compact-rep-type">${rep.repPosition}</span>
+                    <span class="compact-progress-badge ${isAllCompleted ? 'completed' : ''}">${progressText}</span>
                 </div>
             `;
         });
@@ -1648,16 +1834,7 @@ function processScriptReferences(scriptContent, activePhone = null) {
 
 // Update full script display in Step 4
 function updateFullScriptDisplay() {
-    console.log('updateFullScriptDisplay called');
-    console.log('selectedCallScript:', selectedCallScript);
-    console.log('callQueue.length:', callQueue.length);
-    console.log('currentCallIndex:', currentCallIndex);
-    
-    // Make sure Step 4 is visible
-    const callSection = document.getElementById('callSection');
-    if (callSection) {
-        callSection.style.display = 'block';
-    }
+    // Update full script display
     
     // Find the fullScriptDisplay div
     const fullScriptDisplay = document.getElementById('fullScriptDisplay');
@@ -1666,7 +1843,7 @@ function updateFullScriptDisplay() {
         return;
     }
     
-    // Ensure the script display section is always visible
+    // Always ensure the script display section is visible
     fullScriptDisplay.style.display = 'block';
     
     // Find or create the alert div inside fullScriptDisplay
@@ -1696,71 +1873,68 @@ function updateFullScriptDisplay() {
         const formattedContent = processedContent.replace(/\n/g, '<br>');
         alertDiv.innerHTML = `
             <h6><strong>${selectedCallScript.title}</strong></h6>
-            <div class="script-content-full" style="max-height: 300px; overflow-y: auto; white-space: pre-wrap; text-align: left; padding-left: 0;">
-                ${formattedContent}
-            </div>
+            <div class="script-content-full">${formattedContent}</div>
         `;
         
-        // Ensure the alert div is visible
+        // Always ensure the alert div is visible when there's a script
         alertDiv.style.display = 'block';
     } else {
         alertDiv.innerHTML = '<p class="text-muted">Select a script above to see the content here</p>';
         alertDiv.style.display = 'block';
     }
-    
-    // Set up a periodic check to ensure script display stays visible
-    if (selectedCallScript && callQueue.length > 0) {
-        setTimeout(() => {
-            const scriptDisplay = document.getElementById('fullScriptDisplay');
-            if (scriptDisplay && scriptDisplay.style.display === 'none') {
-                console.log('Script display was hidden, restoring...');
-                scriptDisplay.style.display = 'block';
-                updateFullScriptDisplay();
-            }
-        }, 2000);
-    }
 }
 
-// Update call button
+// Update call button and workflow status
 function updateCallButton() {
-    const workflowButton = document.getElementById('startWorkflowButton');
     const status = document.getElementById('callReadyStatus');
 
-    // Check if we have multiple pending calls
-    const pendingCalls = selectedPhones.filter(p => p.status === 'pending');
-    const hasMultipleCalls = pendingCalls.length > 1;
-    const hasActiveCall = selectedPhones.find(p => p.status === 'active');
+    // Check if we have calls ready
+    const hasPhones = selectedPhones.length > 0;
+    const hasScript = selectedCallScript !== null;
+    const canStart = hasPhones && hasScript;
     
-    if (selectedPhones.length > 0 && selectedCallScript) {
-        if (hasMultipleCalls && !hasActiveCall) {
-            // Show workflow button for multiple calls
-            workflowButton.style.display = 'inline-block';
+    if (canStart) {
+        // Only start workflow if not already in progress and not completed
+        const allCallsCompleted = selectedPhones.every(phone => phone.status === 'completed');
+        const workflowInProgress = callQueue.length > 0 && currentCallIndex < callQueue.length;
+        
+        if (!workflowInProgress && !allCallsCompleted) {
+            // Automatically start the workflow if not already started and not all calls completed
+            startStreamlinedWorkflow();
+        }
+        
+        if (allCallsCompleted) {
+            status.innerHTML = `
+                <div class="alert alert-success text-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-trophy me-2"></i>
+                        All calls completed! 🎉
+                    </h5>
+                    <p class="mb-0 mt-2">
+                        <button class="btn btn-primary btn-sm" onclick="restartWorkflow()">
+                            <i class="fas fa-redo me-2"></i>Restart Workflow
+                        </button>
+                    </p>
+                </div>
+            `;
+        } else {
             status.innerHTML = `
                 <i class="fas fa-check-circle text-success me-2"></i>
                 Ready to make ${selectedPhones.length} calls!
             `;
-        } else if (hasActiveCall) {
-            // Hide workflow button when there's an active call
-            workflowButton.style.display = 'none';
-            status.innerHTML = `
-                <i class="fas fa-check-circle text-success me-2"></i>
-                Ready to call ${hasActiveCall.repName} at ${hasActiveCall.display_phone}!
-            `;
-        } else {
-            // Single pending call
-            workflowButton.style.display = 'inline-block';
-            status.innerHTML = `
-                <i class="fas fa-check-circle text-success me-2"></i>
-                Ready to make ${selectedPhones.length} call!
-            `;
         }
     } else {
-        workflowButton.style.display = 'none';
+        // Hide workflow if no calls ready
+        hideNextCallWorkflow();
+        
         let missingItems = [];
-        if (selectedPhones.length === 0) missingItems.push('phone numbers');
-        if (!selectedCallScript) missingItems.push('script');
+        if (!hasPhones) missingItems.push('phone numbers');
+        if (!hasScript) missingItems.push('script');
         status.innerHTML = `Select phone numbers and a script above to enable calling (missing: ${missingItems.join(', ')}). <i class="fas fa-heart me-2"></i> <strong>Your representative wants to hear your voice!</strong> I can't simulate that (yet), so you'll have to make the calls and read the script yourself. <strong>You've got this!</strong> Just follow the workflow above and speak clearly.`;
     }
+    
+    // Check for completion and show congratulatory message
+    checkAllCallsCompleted();
 }
 
 // Show alert messages
@@ -2160,12 +2334,11 @@ function startStreamlinedWorkflow() {
         return;
     }
     
-    // Build call queue from selected phones - include ALL selected phones, not just pending ones
-    // This ensures we don't skip phones for the same representative
+    // Build call queue from selected phones - ensure ALL selected phones are included
     callQueue = selectedPhones.map(phone => ({
         ...phone,
         status: 'pending' // Reset all statuses to pending for the workflow
-    })); // Create a deep copy to avoid modifying original
+    }));
     
     if (callQueue.length === 0) {
         showAlert('No phone numbers selected', 'info');
@@ -2179,6 +2352,14 @@ function startStreamlinedWorkflow() {
     
     showNextCallWorkflow();
     updateNextCallWorkflow();
+    
+    // Show success message
+    showAlert(`Starting workflow with ${callQueue.length} calls!`, 'success');
+    
+    // Ensure script display is maintained
+    setTimeout(() => {
+        updateFullScriptDisplay();
+    }, 100);
 }
 
 // Show the next call workflow interface
@@ -2205,36 +2386,43 @@ function updateNextCallWorkflow() {
     // Get current zip code
     const zipCode = document.getElementById('zipCode').value || 'Not set';
     
-    // Update display
-    document.getElementById('currentCallRepName').textContent = currentCall.repName;
-    document.getElementById('currentCallRepTitle').textContent = currentCall.repPosition;
-    document.getElementById('currentCallPhone').textContent = `${currentCall.phone_type}: ${currentCall.display_phone}`;
-    document.getElementById('currentCallZipCode').textContent = `Zip Code: ${zipCode}`;
-    document.getElementById('callProgressBar').style.width = `${progress}%`;
-    document.getElementById('callProgressText').textContent = `Call ${currentCallIndex + 1} of ${totalCalls}`;
+    // Update display with safety checks
+    const repNameElement = document.getElementById('currentCallRepName');
+    const repTitleElement = document.getElementById('currentCallRepTitle');
+    const phoneElement = document.getElementById('currentCallPhone');
+    const zipCodeElement = document.getElementById('currentCallZipCode');
+    const progressBarElement = document.getElementById('callProgressBar');
+    const progressTextElement = document.getElementById('callProgressText');
+    
+    if (repNameElement) repNameElement.textContent = currentCall.repName;
+    if (repTitleElement) repTitleElement.textContent = currentCall.repPosition;
+    if (phoneElement) phoneElement.textContent = `${currentCall.phone_type}: ${currentCall.display_phone}`;
+    if (zipCodeElement) zipCodeElement.textContent = `Zip Code: ${zipCode}`;
+    if (progressBarElement) progressBarElement.style.width = `${progress}%`;
+    if (progressTextElement) progressTextElement.textContent = `Call ${currentCallIndex + 1} of ${totalCalls}`;
     
     // Update button states
     const startCallButton = document.getElementById('startCallButton');
     const completeCallButton = document.getElementById('completeCallButton');
-    const nextCallButton = document.getElementById('nextCallButton');
     
     if (currentCall.status === 'pending') {
-        startCallButton.style.display = 'inline-block';
-        completeCallButton.style.display = 'none';
-        nextCallButton.style.display = 'none';
-        // Use only the base 10-digit number, not the extension
-        const basePhoneNumber = currentCall.display_phone.split(' x')[0].replace(/[^0-9]/g, '');
-        // Ensure we only use exactly 10 digits
-        const cleanPhoneNumber = basePhoneNumber.replace(/\D/g, '').substring(0, 10);
-        startCallButton.href = `tel:${cleanPhoneNumber}`;
+        if (startCallButton) {
+            startCallButton.style.display = 'inline-block';
+            // Use only the base 10-digit number, not the extension
+            const basePhoneNumber = currentCall.display_phone.split(' x')[0].replace(/[^0-9]/g, '');
+            // Ensure we only use exactly 10 digits
+            const cleanPhoneNumber = basePhoneNumber.replace(/\D/g, '').substring(0, 10);
+            startCallButton.href = `tel:${cleanPhoneNumber}`;
+        }
+        if (completeCallButton) completeCallButton.style.display = 'none';
     } else if (currentCall.status === 'active') {
-        startCallButton.style.display = 'none';
-        completeCallButton.style.display = 'inline-block';
-        nextCallButton.style.display = 'none';
+        if (startCallButton) startCallButton.style.display = 'none';
+        if (completeCallButton) completeCallButton.style.display = 'inline-block';
     } else if (currentCall.status === 'completed') {
-        startCallButton.style.display = 'none';
-        completeCallButton.style.display = 'none';
-        nextCallButton.style.display = 'inline-block';
+        // Don't automatically move to next call here - let saveCallLogStreamlined handle it
+        // This prevents double advancement
+        if (startCallButton) startCallButton.style.display = 'none';
+        if (completeCallButton) completeCallButton.style.display = 'none';
     }
 }
 
@@ -2272,18 +2460,56 @@ function completeCurrentCall() {
 
 // Move to the next call
 function nextCall() {
+    // Move to next call in queue
+    
     currentCallIndex++;
     
     if (currentCallIndex >= callQueue.length) {
         // All calls completed
+        // All calls completed
         showAlert('All calls completed! Great job! 🎉', 'success');
-        hideNextCallWorkflow();
+        
+        // Show restart workflow option
+        const workflowDiv = document.getElementById('nextCallWorkflow');
+        if (workflowDiv) {
+            workflowDiv.innerHTML = `
+                <div class="col-12">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-trophy me-2"></i>
+                                Workflow Complete!
+                            </h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <h5 class="text-success mb-3">
+                                <i class="fas fa-check-circle me-2"></i>
+                                Congratulations! You've completed all ${callQueue.length} calls!
+                            </h5>
+                            <p class="text-muted mb-4">You can restart the workflow to make the same calls again, or select different phone numbers and scripts.</p>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <button class="btn btn-primary" onclick="restartWorkflow()">
+                                    <i class="fas fa-redo me-2"></i>
+                                    Restart Workflow
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="hideNextCallWorkflow()">
+                                    <i class="fas fa-times me-2"></i>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
         return;
     }
     
     // Set the next call to pending (not active) so Start Call button appears
     const nextCall = callQueue[currentCallIndex];
     nextCall.status = 'pending';
+    
+            // Moving to next call
     
     // Update the corresponding phone in selectedPhones
     const phoneInSelected = selectedPhones.find(p => p.repId === nextCall.repId && p.phoneIndex === nextCall.phoneIndex);
@@ -2327,6 +2553,7 @@ function toggleCallRepSection() {
 
 // Modified saveCallLog to work with streamlined workflow
 function saveCallLogStreamlined() {
+    // Save call log in streamlined workflow
     if (!currentCallLog) return;
     
     const phone = currentCallLog.phone;
@@ -2365,7 +2592,9 @@ function saveCallLogStreamlined() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Mark call as completed
+            // Call logged successfully, advancing to next call
+            
+            // Mark call as completed in all relevant arrays
             phone.status = 'completed';
             
             // Update the call in the queue
@@ -2381,6 +2610,7 @@ function saveCallLogStreamlined() {
             }
             
             updateCallInfo();
+            checkAllCallsCompleted();
             
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('callLogModal'));
@@ -2394,6 +2624,7 @@ function saveCallLogStreamlined() {
             
             // Automatically move to next call after a short delay
             setTimeout(() => {
+                // Auto-advancing to next call
                 nextCall();
                 // Ensure script display is maintained after nextCall
                 setTimeout(() => {
@@ -2409,7 +2640,7 @@ function saveCallLogStreamlined() {
         console.error('Error:', error);
         showAlert('Error logging call. Please try again.', 'danger');
     });
-} 
+}
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -2417,4 +2648,270 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInitialRepresentatives();
     loadScripts();
 });
+
+// Restart the workflow with the same selections
+function restartWorkflow() {
+    // Restarting workflow
+    
+    // Reset all phone statuses to pending
+    selectedPhones.forEach(phone => {
+        phone.status = 'pending';
+    });
+    
+    // Reset call queue and index
+    callQueue = [];
+    currentCallIndex = 0;
+    
+    // Restore the original workflow HTML structure
+    const workflowDiv = document.getElementById('nextCallWorkflow');
+    if (workflowDiv) {
+        workflowDiv.innerHTML = `
+            <div class="col-12">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-phone-alt me-2"></i>
+                            Current Call
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="current-call-info">
+                                    <h6 id="currentCallRepName">No call in progress</h6>
+                                    <p class="text-muted mb-1" id="currentCallRepTitle">Select a phone number to start</p>
+                                    <p class="text-muted mb-2" id="currentCallPhone">Select a phone number to start</p>
+                                    <p class="text-muted mb-2" id="currentCallZipCode">Zip Code: Not set</p>
+                                    <div class="call-progress mb-3">
+                                        <div class="progress">
+                                            <div class="progress-bar" id="callProgressBar" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="text-muted" id="callProgressText">Ready to start</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="call-actions">
+                                    <div class="d-grid gap-2">
+                                        <a href="#" class="btn btn-success" id="startCallButton" onclick="startCurrentCall()">
+                                            <i class="fas fa-phone me-2"></i>
+                                            Start Call
+                                        </a>
+                                        <button class="btn btn-primary" id="completeCallButton" style="display: none;" onclick="completeCurrentCall()">
+                                            <i class="fas fa-check me-2"></i>
+                                            Complete Call
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Force update of the call info display
+    updateCallInfo();
+    
+    // Ensure script display is maintained
+    updateFullScriptDisplay();
+    
+    // Start the workflow again
+    startStreamlinedWorkflow();
+    
+    // Workflow restarted
+}
+
+// Auto-populate representatives for first-time users
+async function autoPopulateRepresentatives() {
+    const zipCode = document.getElementById('zipCode').value.trim();
+    
+    if (!zipCode) {
+        showAlert('Please enter a zip code first', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const container = document.getElementById('representativesList');
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5>Finding your representatives...</h5>
+            <p class="text-muted">We're looking up your senators and representative using official government data.</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`/api/representatives/${zipCode}/suggestions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success && data.suggested_representatives) {
+            showSuggestedRepresentatives(data.suggested_representatives, zipCode);
+        } else if (response.status === 400 && data.error && data.error.includes('already exist')) {
+            // Representatives already exist in production database
+            showAlert('Representatives already exist for this zip code. Loading existing data...', 'info');
+            loadRepresentatives(); // Load the existing representatives
+        } else {
+            // Fallback to manual entry
+            showAlert(data.message || 'Could not find suggestions. Please add manually.', 'info');
+            showAddRepForm();
+        }
+        
+    } catch (error) {
+        console.error('Error getting suggestions:', error);
+        showAlert('Error getting suggestions. Please add manually.', 'error');
+        showAddRepForm();
+    }
+}
+
+// Show suggested representatives for user review
+function showSuggestedRepresentatives(suggestedReps, zipCode) {
+    const container = document.getElementById('representativesList');
+    
+    let html = `
+        <div class="alert alert-info mb-4">
+            <i class="fas fa-lightbulb me-2"></i>
+            <strong>We found ${suggestedReps.length} representatives for your area!</strong>
+            <br><small class="text-muted">Review the information below and choose which representatives to add.</small>
+        </div>
+    `;
+    
+    suggestedReps.forEach((rep, index) => {
+        html += `
+            <div class="card mb-3 suggested-rep-card" data-suggestion-id="${rep.id}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <input type="checkbox" class="form-check-input me-2" id="suggested-rep-${index}" checked>
+                        <label for="suggested-rep-${index}" class="mb-0">${rep.full_name}</label>
+                        <span class="badge bg-secondary ms-2">${rep.position}</span>
+                        <span class="badge bg-info ms-1">${rep.source}</span>
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Name:</strong> ${rep.full_name}<br>
+                            <strong>Position:</strong> ${rep.position}<br>
+                            <strong>State:</strong> ${rep.state}
+                            ${rep.district ? `<br><strong>District:</strong> ${rep.district}` : ''}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Phone Numbers:</strong><br>
+        `;
+        
+        if (rep.phone_numbers && rep.phone_numbers.length > 0) {
+            rep.phone_numbers.forEach(phone => {
+                html += `
+                    <div class="ms-3">
+                        <i class="fas fa-phone me-1"></i>
+                        ${phone.phone_type}: ${phone.phone}
+                        ${phone.extension ? ` (ext: ${phone.extension})` : ''}
+                    </div>
+                `;
+            });
+        } else {
+            html += '<span class="text-muted ms-3">No phone numbers available</span>';
+        }
+        
+        html += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += `
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+            <button class="btn btn-success" onclick="acceptSuggestedRepresentatives('${zipCode}')">
+                <i class="fas fa-check me-2"></i>
+                Accept Selected Representatives
+            </button>
+            <button class="btn btn-outline-secondary" onclick="showAddRepForm()">
+                <i class="fas fa-plus me-2"></i>
+                Add Manually Instead
+            </button>
+            <button class="btn btn-outline-danger" onclick="cancelRepresentativeSetup()">
+                <i class="fas fa-times me-2"></i>
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Accept the selected suggested representatives
+async function acceptSuggestedRepresentatives(zipCode) {
+    const selectedSuggestionIds = [];
+    const checkboxes = document.querySelectorAll('.suggested-rep-card input[type="checkbox"]:checked');
+    
+    if (checkboxes.length === 0) {
+        showAlert('Please select at least one representative to add.', 'warning');
+        return;
+    }
+    
+    checkboxes.forEach(checkbox => {
+        const suggestionId = parseInt(checkbox.closest('.suggested-rep-card').dataset.suggestionId);
+        if (suggestionId) {
+            selectedSuggestionIds.push(suggestionId);
+        }
+    });
+    
+    try {
+        const response = await fetch(`/api/representatives/${zipCode}/accept-suggestions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                suggestion_ids: selectedSuggestionIds
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(`Successfully added ${selectedSuggestionIds.length} representatives!`, 'success');
+            // Reload representatives to show the new data
+            loadRepresentatives();
+        } else {
+            showAlert(data.error || 'Error adding representatives', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error accepting suggestions:', error);
+        showAlert('Error adding representatives. Please try again.', 'error');
+    }
+}
+
+// Cancel representative setup and return to zip code entry
+function cancelRepresentativeSetup() {
+    // Clear the zip code input
+    document.getElementById('zipCode').value = '';
+    
+    // Clear the representatives list
+    document.getElementById('representativesList').innerHTML = `
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Enter your zip code above to find your representatives.</strong>
+        </div>
+    `;
+    
+    // Hide the add rep form
+    document.getElementById('addRepButtonContainer').style.display = 'none';
+    document.getElementById('addRepFormContainer').style.display = 'none';
+    
+    // Focus on the zip code input
+    document.getElementById('zipCode').focus();
+}
 

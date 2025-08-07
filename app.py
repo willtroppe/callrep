@@ -1,20 +1,154 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for
-from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timezone
 import os
+import re
+import logging
+from datetime import datetime, timezone
+from flask import Flask, render_template, request, jsonify, session
+from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
+# safe_str_cmp was removed in newer Werkzeug versions, not needed for our use case
+from functools import wraps
 import requests
-import json
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+
+# Security configuration
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-in-production')
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('FLASK_ENV') == 'production'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Security headers middleware
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to all responses"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; img-src 'self' data:; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com;"
+    return response
+
+# CORS configuration
+CORS(app, origins=os.getenv('ALLOWED_ORIGINS', 'http://localhost:8080').split(','))
+
+# Database configuration
+import os.path
+db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'instance', 'rep_contacts.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{db_path}')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# Rate limiting
+from collections import defaultdict
+import time
+
+request_counts = defaultdict(list)
+RATE_LIMIT_REQUESTS = 100  # requests per window
+RATE_LIMIT_WINDOW = 3600   # 1 hour window
+
+def rate_limit(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        client_ip = request.remote_addr
+        now = time.time()
+        
+        # Clean old requests
+        request_counts[client_ip] = [req_time for req_time in request_counts[client_ip] 
+                                   if now - req_time < RATE_LIMIT_WINDOW]
+        
+        # Check rate limit
+        if len(request_counts[client_ip]) >= RATE_LIMIT_REQUESTS:
+            return jsonify({'error': 'Rate limit exceeded'}), 429
+        
+        # Add current request
+        request_counts[client_ip].append(now)
+        
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Input validation functions
+def validate_zip_code(zip_code):
+    """Validate US zip code format"""
+    if not zip_code:
+        return False, "Zip code is required"
+    
+    zip_code = str(zip_code).strip()
+    # US zip code pattern: 5 digits or 5+4 format
+    pattern = r'^\d{5}(-\d{4})?$'
+    if not re.match(pattern, zip_code):
+        return False, "Invalid zip code format. Use 5 digits (e.g., 12345) or 5+4 format (e.g., 12345-6789)"
+    
+    return True, zip_code
+
+def validate_phone_number(phone):
+    """Validate and format phone number"""
+    if not phone:
+        return False, "Phone number is required"
+    
+    # Remove all non-digit characters
+    digits = re.sub(r'\D', '', str(phone))
+    
+    if len(digits) == 10:
+        return True, f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    elif len(digits) == 11 and digits[0] == '1':
+        return True, f"({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+    else:
+        return False, "Invalid phone number format. Use 10 digits (e.g., 1234567890) or 11 digits starting with 1"
+
+def validate_name(name):
+    """Validate representative name"""
+    if not name or not name.strip():
+        return False, "Name is required"
+    
+    name = name.strip()
+    if len(name) < 2:
+        return False, "Name must be at least 2 characters long"
+    
+    if len(name) > 100:
+        return False, "Name must be less than 100 characters"
+    
+    # Allow letters, spaces, hyphens, apostrophes, and periods
+    if not re.match(r'^[A-Za-z\s\-\'\.]+$', name):
+        return False, "Name contains invalid characters"
+    
+    return True, name
+
+def sanitize_input(text):
+    """Sanitize user input to prevent XSS"""
+    if not text:
+        return ""
+    
+    # Remove potentially dangerous HTML/script tags
+    text = re.sub(r'<[^>]*>', '', str(text))
+    # Remove null bytes and other control characters
+    text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', text)
+    return text.strip()
+
+# API Keys from environment variables
+CONGRESS_API_KEY = os.getenv('CONGRESS_API_KEY')
+GOOGLE_CIVIC_API_KEY = os.getenv('GOOGLE_CIVIC_API_KEY')
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY')
+
 # OpenRouter API Configuration - DeepSeek V3 (FREE TIER ONLY)
-OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', 'your-openrouter-api-key-here')
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEEPSEEK_FREE_MODEL = "deepseek/deepseek-chat-v3-0324:free"
 
-app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rep_contacts.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -25,8 +159,6 @@ app.jinja_env.cache = {}
 import logging
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
-
-db = SQLAlchemy(app)
 
 # Database Models
 class Representative(db.Model):
@@ -41,7 +173,7 @@ class Representative(db.Model):
     
     # Relationship to phone numbers
     phone_numbers = db.relationship('RepresentativePhone', backref='representative', cascade='all, delete-orphan')
-
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -51,9 +183,9 @@ class Representative(db.Model):
             'full_name': f"{self.first_name} {self.last_name}",
             'position': self.position,
             'custom_position': self.custom_position,
-            'display_position': self.custom_position if self.position == 'Other' else self.position,
-            'phone_numbers': [phone.to_dict() for phone in self.phone_numbers if phone.deleted_at is None],
-            'created_at': self.created_at.isoformat()
+            'display_position': self.custom_position if self.custom_position else self.position,
+            'phone_numbers': [phone.to_dict() for phone in self.phone_numbers if not phone.deleted_at],
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
 class RepresentativePhone(db.Model):
@@ -71,8 +203,58 @@ class RepresentativePhone(db.Model):
             'phone': self.phone,
             'extension': self.extension,
             'phone_type': self.phone_type,
-            'display_phone': f"{self.phone}{' ext. ' + self.extension if self.extension else ''}",
-            'phone_link': f"{self.phone}{',' + self.extension if self.extension else ''}"
+            'display_phone': f"{self.phone}{f' ext. {self.extension}' if self.extension else ''}",
+            'phone_link': f"{self.phone}{f',{self.extension}' if self.extension else ''}",
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class RepresentativeSuggestion(db.Model):
+    """Suggestion database for API-sourced representative data"""
+    id = db.Column(db.Integer, primary_key=True)
+    zip_code = db.Column(db.String(10), nullable=False)
+    first_name = db.Column(db.String(100), nullable=False)
+    last_name = db.Column(db.String(100), nullable=False)
+    position = db.Column(db.String(100), nullable=False)
+    state = db.Column(db.String(50), nullable=False)
+    district = db.Column(db.String(50), nullable=True)
+    source = db.Column(db.String(50), nullable=False)  # 'congress_gov', 'google_civic', etc.
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    # Relationship to phone numbers
+    phone_numbers = db.relationship('RepresentativeSuggestionPhone', backref='representative_suggestion', cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'zip_code': self.zip_code,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'full_name': f"{self.first_name} {self.last_name}",
+            'position': self.position,
+            'state': self.state,
+            'district': self.district,
+            'source': self.source,
+            'phone_numbers': [phone.to_dict() for phone in self.phone_numbers],
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class RepresentativeSuggestionPhone(db.Model):
+    """Phone numbers for suggestion database"""
+    id = db.Column(db.Integer, primary_key=True)
+    representative_suggestion_id = db.Column(db.Integer, db.ForeignKey('representative_suggestion.id'), nullable=False)
+    phone = db.Column(db.String(20), nullable=False)
+    extension = db.Column(db.String(10), nullable=True)
+    phone_type = db.Column(db.String(50), nullable=False, default='Main')
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'phone': self.phone,
+            'extension': self.extension,
+            'phone_type': self.phone_type,
+            'display_phone': f"{self.phone}{f' ext. {self.extension}' if self.extension else ''}",
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
 class CallScript(db.Model):
@@ -137,91 +319,279 @@ class CallLog(db.Model):
 def index():
     return render_template('index.html')
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint for monitoring"""
+    try:
+        # Test database connection
+        from sqlalchemy import text
+        db.session.execute(text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'version': '1.0.0',
+            'build_date': '2024-01-15'
+        }), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now(timezone.utc).isoformat()
+        }), 500
+
+@app.route('/version')
+def version():
+    """Version information endpoint"""
+    return jsonify({
+        'version': '1.0.0',
+        'name': 'CallRep',
+        'description': 'Contact Your Representatives - Production Ready',
+        'build_date': '2024-01-15'
+    })
+
 @app.route('/api/representatives/<zip_code>')
+@rate_limit
 def get_representatives(zip_code):
-    reps = Representative.query.filter_by(zip_code=zip_code, deleted_at=None).all()
-    return jsonify([rep.to_dict() for rep in reps])
+    """Get representatives from the production database (human-validated only)"""
+    # Validate zip code
+    is_valid, result = validate_zip_code(zip_code)
+    if not is_valid:
+        return jsonify({'error': result}), 400
+    
+    try:
+        reps = Representative.query.filter_by(zip_code=result, deleted_at=None).all()
+        logger.info(f"Retrieved {len(reps)} representatives for zip code {result}")
+        return jsonify([rep.to_dict() for rep in reps])
+    except Exception as e:
+        logger.error(f"Error retrieving representatives for zip {result}: {e}")
+        return jsonify({'error': 'Error retrieving representatives'}), 500
+
+@app.route('/api/representatives/<zip_code>/suggestions', methods=['POST'])
+@rate_limit
+def get_representative_suggestions(zip_code):
+    """
+    Get suggested representatives from the suggestion database for a zip code.
+    These are API-sourced suggestions that users can review and accept.
+    """
+    # Validate zip code
+    is_valid, result = validate_zip_code(zip_code)
+    if not is_valid:
+        return jsonify({'error': result}), 400
+    
+    try:
+        # Check if representatives already exist for this zip code in production DB
+        existing_reps = Representative.query.filter_by(zip_code=result, deleted_at=None).all()
+        if existing_reps:
+            return jsonify({'error': 'Representatives already exist for this zip code'}), 400
+        
+        # Get suggestions from suggestion database
+        suggestions = RepresentativeSuggestion.query.filter_by(zip_code=result).all()
+        
+        if suggestions:
+            logger.info(f"Found {len(suggestions)} suggestions for zip code {result}")
+            return jsonify({
+                'success': True,
+                'suggested_representatives': [suggestion.to_dict() for suggestion in suggestions],
+                'message': f'Found {len(suggestions)} suggested representatives for your area'
+            })
+        else:
+            logger.info(f"No suggestions found for zip code {result}")
+            return jsonify({
+                'success': False,
+                'message': 'No suggestions available for this zip code. Please add representatives manually.'
+            })
+            
+    except Exception as e:
+        logger.error(f"Error getting suggestions for zip {result}: {e}")
+        return jsonify({'error': 'Error getting suggestions'}), 500
+
+@app.route('/api/representatives/<zip_code>/accept-suggestions', methods=['POST'])
+@rate_limit
+def accept_suggested_representatives(zip_code):
+    """
+    Accept suggested representatives and add them to the production database.
+    """
+    # Validate zip code
+    is_valid, result = validate_zip_code(zip_code)
+    if not is_valid:
+        return jsonify({'error': result}), 400
+    
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        accepted_suggestion_ids = data.get('suggestion_ids', [])
+        
+        if not accepted_suggestion_ids:
+            return jsonify({'error': 'No suggestions selected'}), 400
+        
+        # Validate suggestion IDs are integers
+        try:
+            accepted_suggestion_ids = [int(sid) for sid in accepted_suggestion_ids]
+        except (ValueError, TypeError):
+            return jsonify({'error': 'Invalid suggestion IDs'}), 400
+        
+        added_reps = []
+        skipped_reps = []
+        
+        for suggestion_id in accepted_suggestion_ids:
+            suggestion = RepresentativeSuggestion.query.get(suggestion_id)
+            if suggestion and suggestion.zip_code == result:
+                # Check if this specific representative already exists
+                existing_rep = Representative.query.filter_by(
+                    zip_code=result,
+                    first_name=suggestion.first_name,
+                    last_name=suggestion.last_name,
+                    position=suggestion.position,
+                    deleted_at=None
+                ).first()
+                
+                if existing_rep:
+                    # Representative already exists, skip it
+                    skipped_reps.append(f"{suggestion.first_name} {suggestion.last_name}")
+                    continue
+                
+                # Create representative in production database
+                new_rep = Representative(
+                    zip_code=result,
+                    first_name=suggestion.first_name,
+                    last_name=suggestion.last_name,
+                    position=suggestion.position,
+                    custom_position=None
+                )
+                db.session.add(new_rep)
+                db.session.flush()  # Get the ID
+                
+                # Add phone numbers
+                for phone_suggestion in suggestion.phone_numbers:
+                    phone_obj = RepresentativePhone(
+                        representative_id=new_rep.id,
+                        phone=phone_suggestion.phone,
+                        extension=phone_suggestion.extension,
+                        phone_type=phone_suggestion.phone_type
+                    )
+                    db.session.add(phone_obj)
+                
+                added_reps.append(new_rep.to_dict())
+        
+        db.session.commit()
+        logger.info(f"Added {len(added_reps)} representatives for zip {result}, skipped {len(skipped_reps)}")
+        
+        message = f'Successfully added {len(added_reps)} representatives'
+        if skipped_reps:
+            message += f'. Skipped {len(skipped_reps)} already existing: {", ".join(skipped_reps)}'
+        
+        return jsonify({
+            'success': True,
+            'message': message,
+            'representatives': added_reps
+        })
+        
+    except Exception as e:
+        logger.error(f"Error accepting suggestions for zip {result}: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Error adding representatives'}), 500
 
 @app.route('/api/representatives', methods=['POST'])
+@rate_limit
 def add_representative():
-    data = request.json
-    
-    # Parse name into first and last
-    full_name = data.get('name', data.get('representative_name', '')).strip()
-    name_parts = full_name.split()
-    
-    if len(name_parts) >= 2:
-        first_name = name_parts[0]
-        last_name = ' '.join(name_parts[1:])
-    else:
-        first_name = full_name
-        last_name = ''
-    
-    # Handle custom position
-    position = data['position']
-    custom_position = data.get('custom_position', '') if position == 'Other' else None
-    
-    new_rep = Representative(
-        zip_code=data['zip_code'],
-        first_name=first_name,
-        last_name=last_name,
-        position=position,
-        custom_position=custom_position
-    )
-    db.session.add(new_rep)
-    db.session.flush()  # Get the ID
-    
-    # Add phone numbers
-    phone_data = data.get('phones', [])
-    if not phone_data:
-        # Backward compatibility - single phone
-        phone = data.get('phone', '')
-        extension = data.get('extension', '')
-        phone_type = data.get('phone_type', 'Main')
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
         
-        if phone:
-            # Sanitize phone number
-            phone_digits = ''.join(filter(str.isdigit, phone))
-            if len(phone_digits) == 10:
-                phone = f"({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:]}"
-            elif len(phone_digits) == 11 and phone_digits[0] == '1':
-                phone = f"({phone_digits[1:4]}) {phone_digits[4:7]}-{phone_digits[7:]}"
-            else:
-                phone = phone_digits if phone_digits else phone
+        # Validate zip code
+        zip_code = data.get('zip_code', '')
+        is_valid, zip_result = validate_zip_code(zip_code)
+        if not is_valid:
+            return jsonify({'error': zip_result}), 400
+        
+        # Validate and parse name
+        full_name = sanitize_input(data.get('name', data.get('representative_name', '')))
+        is_valid, name_result = validate_name(full_name)
+        if not is_valid:
+            return jsonify({'error': name_result}), 400
+        
+        name_parts = name_result.split()
+        if len(name_parts) >= 2:
+            first_name = name_parts[0]
+            last_name = ' '.join(name_parts[1:])
+        else:
+            first_name = name_result
+            last_name = ''
+        
+        # Validate position
+        position = sanitize_input(data.get('position', ''))
+        if not position or position not in ['Senator', 'Representative', 'Other']:
+            return jsonify({'error': 'Invalid position. Must be Senator, Representative, or Other'}), 400
+        
+        custom_position = None
+        if position == 'Other':
+            custom_position = sanitize_input(data.get('custom_position', ''))
+            if not custom_position:
+                return jsonify({'error': 'Custom position is required when position is Other'}), 400
+        
+        # Create representative
+        new_rep = Representative(
+            zip_code=zip_result,
+            first_name=first_name,
+            last_name=last_name,
+            position=position,
+            custom_position=custom_position
+        )
+        db.session.add(new_rep)
+        db.session.flush()  # Get the ID
+        
+        # Add phone numbers
+        phone_data = data.get('phones', [])
+        if not phone_data:
+            # Backward compatibility - single phone
+            phone = data.get('phone', '')
+            extension = sanitize_input(data.get('extension', ''))
+            phone_type = sanitize_input(data.get('phone_type', 'Main'))
             
-            phone_obj = RepresentativePhone(
-                representative_id=new_rep.id,
-                phone=phone,
-                extension=extension,
-                phone_type=phone_type
-            )
-            db.session.add(phone_obj)
-    else:
-        # Multiple phones
-        for phone_info in phone_data:
-            phone = phone_info['phone']
-            extension = phone_info.get('extension', '')
-            phone_type = phone_info.get('phone_type', 'Main')
-            
-            # Sanitize phone number
-            phone_digits = ''.join(filter(str.isdigit, phone))
-            if len(phone_digits) == 10:
-                phone = f"({phone_digits[:3]}) {phone_digits[3:6]}-{phone_digits[6:]}"
-            elif len(phone_digits) == 11 and phone_digits[0] == '1':
-                phone = f"({phone_digits[1:4]}) {phone_digits[4:7]}-{phone_digits[7:]}"
-            else:
-                phone = phone_digits if phone_digits else phone
-            
-            phone_obj = RepresentativePhone(
-                representative_id=new_rep.id,
-                phone=phone,
-                extension=extension,
-                phone_type=phone_type
-            )
-            db.session.add(phone_obj)
-    
-    db.session.commit()
-    return jsonify(new_rep.to_dict()), 201
+            if phone:
+                is_valid, phone_result = validate_phone_number(phone)
+                if not is_valid:
+                    return jsonify({'error': phone_result}), 400
+                
+                phone_obj = RepresentativePhone(
+                    representative_id=new_rep.id,
+                    phone=phone_result,
+                    extension=extension,
+                    phone_type=phone_type
+                )
+                db.session.add(phone_obj)
+        else:
+            # Multiple phones
+            for phone_info in phone_data:
+                phone = phone_info.get('phone', '')
+                extension = sanitize_input(phone_info.get('extension', ''))
+                phone_type = sanitize_input(phone_info.get('phone_type', 'Main'))
+                
+                if phone:
+                    is_valid, phone_result = validate_phone_number(phone)
+                    if not is_valid:
+                        return jsonify({'error': phone_result}), 400
+                    
+                    phone_obj = RepresentativePhone(
+                        representative_id=new_rep.id,
+                        phone=phone_result,
+                        extension=extension,
+                        phone_type=phone_type
+                    )
+                    db.session.add(phone_obj)
+        
+        db.session.commit()
+        logger.info(f"Added representative {first_name} {last_name} for zip {zip_result}")
+        return jsonify({'success': True, 'representative': new_rep.to_dict()}), 201
+        
+    except Exception as e:
+        logger.error(f"Error adding representative: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Error adding representative'}), 500
 
 @app.route('/api/representatives/<int:rep_id>', methods=['DELETE'])
 def delete_representative(rep_id):
@@ -264,8 +634,12 @@ def delete_phone_number(rep_id, phone_id):
 
 @app.route('/api/scripts')
 def get_scripts():
-    scripts = CallScript.query.order_by(CallScript.created_at.desc()).all()
-    return jsonify([script.to_dict() for script in scripts])
+    try:
+        scripts = CallScript.query.order_by(CallScript.created_at.desc()).all()
+        return jsonify([script.to_dict() for script in scripts])
+    except Exception as e:
+        logger.error(f"Error getting scripts: {e}")
+        return jsonify({'error': 'Error retrieving scripts'}), 500
 
 @app.route('/api/scripts', methods=['POST'])
 def add_script():
@@ -326,7 +700,7 @@ def generate_script():
                     'mode': 'local'
                 })
             except Exception as e:
-                print(f"AI generation failed, using external tool approach: {str(e)}")
+                logger.warning(f"AI generation failed, using external tool approach: {str(e)}")
                 # Use external AI tool approach (same as production) when API fails
                 prompt_text = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
 
@@ -506,10 +880,10 @@ Write only the title, no additional text."""
         }
         
     except requests.exceptions.RequestException as e:
-        print(f"Request exception: {e}")
+        logger.error(f"Request exception: {e}")
         raise Exception(f"Network error: {str(e)}")
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        logger.error(f"Unexpected error: {e}")
         raise
 
 def generate_fallback_script(notes):
@@ -716,83 +1090,172 @@ def get_call_stats():
         'calls_by_script': calls_by_script
     })
 
+@app.route('/api/clear-database', methods=['POST'])
+def clear_database():
+    """
+    Clear all representative data except for zip code 94102.
+    This removes auto-populated data that was added without user approval.
+    """
+    try:
+        # Delete all representatives except those with zip code 94102
+        representatives_to_delete = Representative.query.filter(
+            Representative.zip_code != '94102',
+            Representative.deleted_at.is_(None)
+        ).all()
+        
+        deleted_count = 0
+        for rep in representatives_to_delete:
+            rep.deleted_at = datetime.now(timezone.utc)
+            deleted_count += 1
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully cleared {deleted_count} representatives from database',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing database: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Error clearing database'}), 500
+
 # Initialize database with some sample data
 def init_db():
-    """Initialize the database with sample data"""
-    db.create_all()
-    
-    # Check if we already have data
-    if CallScript.query.first() is None:
-        # Add sample scripts
-        sample_scripts = [
-            CallScript(title="Healthcare Reform", content="Hi, I'm calling about healthcare reform. I believe everyone deserves access to affordable healthcare and I urge you to support policies that expand coverage and reduce costs."),
-            CallScript(title="Climate Action", content="Hello, I'm calling as a concerned constituent about climate change. I believe we need immediate action to reduce emissions and transition to renewable energy sources."),
-            CallScript(title="Education Funding", content="Hi there, I'm calling about education funding. I believe our schools need more resources and I'm asking you to support increased funding for public education.")
-        ]
+    with app.app_context():
+        # Create all tables
+        db.create_all()
         
-        for script in sample_scripts:
-            db.session.add(script)
-        
-        db.session.commit()
-    
-    # Add test call log data if none exists
-    if CallLog.query.first() is None:
-        from datetime import datetime, timedelta
-        import random
-        
-        # Create test data for the last 30 days
-        test_reps = ["Senator John Smith", "Representative Jane Doe", "Governor Bob Johnson", "Senator Alice Brown", "Representative Mike Wilson"]
-        test_scripts = ["Healthcare Reform", "Climate Action", "Education Funding", "Gun Control", "Immigration Reform"]
-        outcomes = ["person", "voicemail", "failed"]
-        
-        # Create more varied and realistic data patterns
-        for i in range(30):
-            date = datetime.now() - timedelta(days=i)
+        # Check if we already have data
+        if Representative.query.first() is None:
+            # Add sample representatives for 94102 (San Francisco)
+            nancy_pelosi = Representative(
+                zip_code='94102',
+                first_name='Nancy',
+                last_name='Pelosi',
+                position='Representative',
+                custom_position=None
+            )
+            db.session.add(nancy_pelosi)
+            db.session.flush()
             
-            # Create varying call volumes - more calls on weekdays, fewer on weekends
-            is_weekend = date.weekday() >= 5  # Saturday = 5, Sunday = 6
-            if is_weekend:
-                daily_calls = random.randint(0, 2)  # Fewer calls on weekends
-            else:
-                daily_calls = random.randint(2, 8)  # More calls on weekdays
+            # Add phone numbers for Nancy Pelosi
+            pelosi_dc_phone = RepresentativePhone(
+                representative_id=nancy_pelosi.id,
+                phone='(202) 225-4965',
+                extension='1',
+                phone_type='DC Office'
+            )
+            pelosi_district_phone = RepresentativePhone(
+                representative_id=nancy_pelosi.id,
+                phone='(415) 556-4862',
+                extension='5',
+                phone_type='District Office'
+            )
+            db.session.add(pelosi_dc_phone)
+            db.session.add(pelosi_district_phone)
             
-            # Add some special days with higher activity
-            if i in [0, 7, 14, 21]:  # Every week has one high-activity day
-                daily_calls = random.randint(8, 15)
+            # Add Alex Padilla (Senator)
+            alex_padilla = Representative(
+                zip_code='94102',
+                first_name='Alex',
+                last_name='Padilla',
+                position='Senator',
+                custom_position=None
+            )
+            db.session.add(alex_padilla)
+            db.session.flush()
             
-            for j in range(daily_calls):
-                # Vary outcomes based on time of day
-                hour = random.randint(9, 17)
-                if hour < 12:
-                    # Morning calls more likely to reach people
-                    outcome_weights = {"person": 0.6, "voicemail": 0.3, "failed": 0.1}
-                else:
-                    # Afternoon calls more likely to get voicemail
-                    outcome_weights = {"person": 0.3, "voicemail": 0.6, "failed": 0.1}
-                
-                # Weighted random choice for outcomes
-                outcome = random.choices(list(outcome_weights.keys()), weights=list(outcome_weights.values()))[0]
-                
-                call_log = CallLog(
-                    user_id='test_user',
-                    representative_name=random.choice(test_reps),
-                    phone_number=f"(555) 123-{random.randint(1000, 9999)}",
-                    phone_type=random.choice(["DC Office", "District Office", "Main", "Constituent Services"]),
-                    call_datetime=date.replace(hour=hour, minute=random.randint(0, 59)),
-                    call_outcome=outcome,
-                    call_notes=f"Test call {i}-{j} - {outcome}",
-                    script_id=random.randint(1, 5),
-                    script_title=random.choice(test_scripts),
-                    session_id=f"test_session_{i}",
-                    created_at=date
+            # Add phone numbers for Alex Padilla
+            padilla_dc_phone = RepresentativePhone(
+                representative_id=alex_padilla.id,
+                phone='(202) 224-3553',
+                extension='2',
+                phone_type='DC Office'
+            )
+            padilla_district_phone = RepresentativePhone(
+                representative_id=alex_padilla.id,
+                phone='(415) 981-9369',
+                extension='',
+                phone_type='District Office'
+            )
+            db.session.add(padilla_dc_phone)
+            db.session.add(padilla_district_phone)
+            
+            # Add Adam Schiff (Senator)
+            adam_schiff = Representative(
+                zip_code='94102',
+                first_name='Adam',
+                last_name='Schiff',
+                position='Senator',
+                custom_position=None
+            )
+            db.session.add(adam_schiff)
+            db.session.flush()
+            
+            # Add phone numbers for Adam Schiff
+            schiff_dc_phone = RepresentativePhone(
+                representative_id=adam_schiff.id,
+                phone='(202) 224-3841',
+                extension='1',
+                phone_type='DC Office'
+            )
+            schiff_district_phone = RepresentativePhone(
+                representative_id=adam_schiff.id,
+                phone='(310) 914-7300',
+                extension='',
+                phone_type='District Office'
+            )
+            db.session.add(schiff_dc_phone)
+            db.session.add(schiff_district_phone)
+            
+            db.session.commit()
+            logger.info("Added sample representatives for 94102")
+        
+        # Initialize call scripts if they don't exist
+        if CallScript.query.first() is None:
+            scripts = [
+                CallScript(
+                    title="General Support",
+                    content="Hello, I'm calling to express my support for [issue/topic]. I believe this is important for our community and I hope you'll consider supporting it. Thank you for your time."
+                ),
+                CallScript(
+                    title="Opposition",
+                    content="Hello, I'm calling to express my opposition to [issue/topic]. I have concerns about how this might affect our community and I hope you'll reconsider your position. Thank you for listening."
+                ),
+                CallScript(
+                    title="Request Information",
+                    content="Hello, I'm calling to request more information about [issue/topic]. I'd like to understand your position and what you're doing to address this issue. Thank you for your time."
+                ),
+                CallScript(
+                    title="Thank You",
+                    content="Hello, I'm calling to thank you for your work on [issue/topic]. I appreciate your efforts and wanted to let you know that your constituents are paying attention. Keep up the good work!"
+                ),
+                CallScript(
+                    title="Custom Issue",
+                    content="Hello, I'm calling about [describe your issue]. This is important to me because [explain why]. I hope you'll consider [what you want them to do]. Thank you for your time and consideration."
                 )
-                db.session.add(call_log)
-        
-        db.session.commit()
-        print("Added comprehensive test call log data")
+            ]
+            
+            for script in scripts:
+                db.session.add(script)
+            
+            db.session.commit()
+            logger.info("Added sample call scripts")
 
 if __name__ == '__main__':
+    # Production configuration
+    port = int(os.getenv('PORT', 8080))
+    debug = os.getenv('FLASK_ENV') == 'development'
+    
     with app.app_context():
-        init_db()
-    # Development settings
-    app.run(host='0.0.0.0', port=8080, debug=False) 
+        try:
+            db.create_all()
+            init_db()
+        except Exception as e:
+            logger.warning(f"Database initialization warning: {e}")
+            # Continue anyway - tables might already exist
+    
+    logger.info(f"Starting CallRep app on port {port} (debug={debug})")
+    app.run(host='0.0.0.0', port=port, debug=debug) 
