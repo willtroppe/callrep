@@ -472,10 +472,14 @@ body.dark .modal-header .btn-close {
     }
     
     .card-body {
-    padding: 1rem;
-    background: var(--neumorphic-light);
-    border-radius: 0 0 var(--neumorphic-radius-large) var(--neumorphic-radius-large);
-}
+        padding: 1rem;
+        background: var(--glass-bg-light);
+        border-radius: 0 0 var(--glass-radius-large) var(--glass-radius-large);
+    }
+    
+    body.dark .card-body {
+        background: var(--glass-bg-dark);
+    }
     
     .representative-card {
         padding: 0.5rem;
