@@ -1990,4 +1990,15 @@ body.dark .congratulations-message .alert {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Info tooltip styling for better visibility in dark mode */
+body.dark .info-tooltip {
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.6));
+}
+
+body.dark .info-tooltip:hover {
+    text-shadow: 0 0 3px rgba(255, 255, 255, 1);
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
 } 
