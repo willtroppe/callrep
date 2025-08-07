@@ -39,12 +39,17 @@
                 <ul class="nav nav-tabs mb-4 glassmorphic-tabs" id="mainTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="make-calls-tab" data-bs-toggle="tab" data-bs-target="#make-calls" type="button" role="tab">
-                            <i class="fas fa-phone me-2"></i>Make Calls
+                            <i class="fas fa-phone me-2"></i>Call
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="analyze-calls-tab" data-bs-toggle="tab" data-bs-target="#analyze-calls" type="button" role="tab">
-                            <i class="fas fa-chart-bar me-2"></i>Analyze Calls
+                            <i class="fas fa-chart-bar me-2"></i>Analyze
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tips-tab" data-bs-toggle="tab" data-bs-target="#tips" type="button" role="tab">
+                            <i class="fas fa-lightbulb me-2"></i>Tips
                         </button>
                     </li>
                 </ul>
@@ -82,9 +87,15 @@
                                 <!-- Step 2: Representatives Section -->
                                 <div class="card mb-4" id="representativesSection">
                                     <div class="card-header">
-                                        <h5 class="mb-0">
+                                        <h5 class="mb-0 d-flex align-items-center">
                                             <i class="fas fa-users me-2"></i>
                                             Step 2: Your Representatives
+                                            <i class="fas fa-info-circle ms-2 text-muted" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="right" 
+                                               data-bs-html="true"
+                                               title="<strong>Recommended Setup:</strong><br>• Add DC and district offices for both senators<br>• Add DC and district offices for your representative<br>• Consider adding governors, state attorneys general, mayors, and other local representatives"
+                                               style="font-size: 0.8rem; cursor: pointer;"></i>
                                         </h5>
                                     </div>
                                     <div class="card-body">
@@ -192,7 +203,15 @@
                                         <hr>
 
                                         <!-- Create New Script Section -->
-                                        <h6>Create New Script:</h6>
+                                        <h6 class="d-flex align-items-center">
+                                            Create New Script:
+                                            <i class="fas fa-info-circle ms-2 text-muted" 
+                                               data-bs-toggle="tooltip" 
+                                               data-bs-placement="right" 
+                                               data-bs-html="true"
+                                               title="<strong>Pro Tip:</strong><br>We recommend using the GenAI workflow to optimize your script for maximum impact. It incorporates all best practices and creates more effective messaging."
+                                               style="font-size: 0.7rem; cursor: pointer;"></i>
+                                        </h6>
                                         
                                         <!-- Create Options -->
                                         <div id="createOptions" class="mb-4">
@@ -457,6 +476,65 @@
                                                             <!-- Call log entries will be populated here -->
                                                         </tbody>
                                                     </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tips Tab -->
+                    <div class="tab-pane fade" id="tips" role="tabpanel">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                            Best Practices for Contacting Your Representatives
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-lg-6">
+                                                <h6><i class="fas fa-clock me-2 text-primary"></i>1. Keep It Short — 1-2 Minutes Max</h6>
+                                                <p class="mb-3">Staffers are busy and take many calls daily. Get to the point quickly and clearly. A concise, respectful message is more likely to be noted and logged.</p>
+
+                                                <h6><i class="fas fa-bullseye me-2 text-primary"></i>2. Focus on One Topic per Call</h6>
+                                                <p class="mb-3">Stick to a single issue per contact to avoid diluting your message. If you care about multiple topics, call back again later — that's perfectly okay.</p>
+
+                                                <h6><i class="fas fa-id-card me-2 text-primary"></i>3. State Who You Are Clearly</h6>
+                                                <p class="mb-3">Mention that you're a constituent — this matters most. Include your ZIP code or city to show you're in their district.</p>
+
+                                                <h6><i class="fas fa-hand-point-right me-2 text-primary"></i>4. Make a Specific Ask</h6>
+                                                <p class="mb-3">Don't just say "I support climate action" — say: <em>"I'm calling to ask Representative [Name] to vote yes on [Bill Number or Issue Name]."</em> If you don't have a bill number, still be as specific as possible.</p>
+
+                                                <h6><i class="fas fa-handshake me-2 text-primary"></i>5. Be Polite, Not Passionless</h6>
+                                                <p class="mb-3">Staffers appreciate calm, respectful callers. It makes them more receptive. You can express concern or urgency, just avoid yelling or long rants.</p>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <h6><i class="fas fa-user-edit me-2 text-primary"></i>6. Use Your Own Words (Even a Few)</h6>
+                                                <p class="mb-3">Scripts are helpful (and you can use them!), but even a slight personal touch makes it more powerful. E.g., "As someone who just had a baby, I care about paid leave" hits harder than just reading a script.</p>
+
+                                                <h6><i class="fas fa-voicemail me-2 text-primary"></i>7. You Can Call After Hours</h6>
+                                                <p class="mb-3">Leaving a voicemail is totally fine — and sometimes more convenient.</p>
+
+                                                <h6><i class="fas fa-envelope me-2 text-primary"></i>8. Follow Up in Writing</h6>
+                                                <p class="mb-4">Email or a physical letter can reinforce your message. Mention that you called too. Websites like resist.bot or 5calls.org can help automate this.</p>
+
+                                                <div class="card bg-light">
+                                                    <div class="card-header">
+                                                        <h6 class="mb-0"><i class="fas fa-brain me-2 text-success"></i>Bonus Tips</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul class="mb-0">
+                                                            <li>Call local district offices, not just the D.C. office — they log calls too.</li>
+                                                            <li>Staffers track volume — even if they don't agree, your message gets counted.</li>
+                                                            <li>Recruit friends — a handful of calls from constituents can shift priorities, especially for local/state reps.</li>
+                                                        </ul>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

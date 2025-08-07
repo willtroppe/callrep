@@ -122,7 +122,7 @@ function initDarkMode() {
     }
 }
 
-// Add Enter key support for zip code input
+// Add Enter key support for zip code input and initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {
     const zipCodeInput = document.getElementById('zipCode');
     if (zipCodeInput) {
@@ -132,6 +132,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 });
 
 // Load representatives without requiring zip code (for initialization)

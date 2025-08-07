@@ -774,17 +774,20 @@ def generate_ai_script(notes):
     if OPENROUTER_API_KEY == 'your-openrouter-api-key-here' or OPENROUTER_API_KEY == 'invalid-key-for-testing':
         raise Exception("OpenRouter API key not configured")
     
-    prompt = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives.
+    prompt = f"""You are a helpful assistant that creates phone call scripts for constituents calling their representatives. Follow these best practices for effective advocacy:
 
 User input: {notes}
 
-Please create a professional, polite, and effective phone call script that:
+Create a professional, polite, and effective phone call script that:
 1. Is conversational and natural-sounding
-2. Clearly states the issue/concern based on the user's input
-3. Makes a specific request or asks for action
-4. Is respectful
-5. Does NOT solicit input from the representative (they are there to listen and take notes)
-6. Is 5-10 sentences long, depending on how much detail the user provided
+2. Keeps it short (1-2 minutes when read aloud)
+3. Focuses on ONE topic only (based on user input)
+4. Clearly identifies the caller as a constituent
+5. States the issue/concern clearly and specifically
+6. Makes a SPECIFIC ask or request for action (be as specific as possible)
+7. Is respectful and calm in tone
+8. Does NOT solicit input from the representative (they are there to listen and take notes)
+9. Is 4-8 sentences long, depending on complexity
 
 IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode."
 
@@ -795,9 +798,14 @@ You can use these reference parameters in your script:
 - @LastName: Will be replaced with the representative's last name
 - @ZipCode: Will be replaced with the constituent's zip code
 
-Example: "I'm calling @RepType @LastName from @ZipCode to express my concern about..."
+Example: "I'm calling @RepType @LastName from @ZipCode to ask you to vote yes on [specific bill/issue]..."
 
-Do not be overly thankful for the representative's public service. Keep the tone professional and direct.
+TONE GUIDELINES:
+- Be polite but not passionless - you can express concern or urgency
+- Do not be overly thankful for their public service
+- Keep it professional and direct
+- Avoid long rants or emotional language
+- Make your ask crystal clear and specific
 
 Write only the script content, no additional formatting or explanations."""
 
