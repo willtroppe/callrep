@@ -784,10 +784,11 @@ Create a professional, polite, and effective phone call script that:
 3. Focuses on ONE topic only (based on user input)
 4. Clearly identifies the caller as a constituent
 5. States the issue/concern clearly and specifically
-6. Makes a SPECIFIC ask or request for action (be as specific as possible)
-7. Is respectful and calm in tone
+6. If possible, makes a specific ask or request for action (be as specific as possible)
+7. Is respectful in tone
 8. Does NOT solicit input from the representative (they are there to listen and take notes)
 9. Is 4-8 sentences long, depending on complexity
+10. Do not be overly thankful for their public service or for the work they do on behalf of the district
 
 IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode."
 
@@ -802,10 +803,10 @@ Example: "I'm calling @RepType @LastName from @ZipCode to ask you to vote yes on
 
 TONE GUIDELINES:
 - Be polite but not passionless - you can express concern or urgency
-- Do not be overly thankful for their public service
 - Keep it professional and direct
-- Avoid long rants or emotional language
-- Make your ask crystal clear and specific
+- Avoid long rants
+- Make your ask clear and specific
+- If possible, refer to specific specific recent votes or proposed legislation
 
 Write only the script content, no additional formatting or explanations."""
 
