@@ -782,11 +782,13 @@ Please create a professional, polite, and effective phone call script that:
 1. Is conversational and natural-sounding
 2. Clearly states the issue/concern based on the user's input
 3. Makes a specific request or asks for action
-4. Is respectful and appreciative
+4. Is respectful
 5. Does NOT solicit input from the representative (they are there to listen and take notes)
 6. Is 5-10 sentences long, depending on how much detail the user provided
 
 IMPORTANT: Always start the script with: "Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode."
+
+IMPORTANT: Always end the script with: "Thank you and have a great day."
 
 You can use these reference parameters in your script:
 - @RepType: Will be replaced with "Representative" or "Senator"
@@ -794,6 +796,8 @@ You can use these reference parameters in your script:
 - @ZipCode: Will be replaced with the constituent's zip code
 
 Example: "I'm calling @RepType @LastName from @ZipCode to express my concern about..."
+
+Do not be overly thankful for the representative's public service. Keep the tone professional and direct.
 
 Write only the script content, no additional formatting or explanations."""
 
