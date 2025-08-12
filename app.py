@@ -329,7 +329,7 @@ def health_check():
         return jsonify({
             'status': 'healthy',
             'timestamp': datetime.now(timezone.utc).isoformat(),
-            'version': '1.0.0',
+            'version': '1.1.0',
             'build_date': '2024-01-15'
         }), 200
     except Exception as e:
@@ -899,95 +899,7 @@ Write only the title, no additional text."""
         logger.error(f"Unexpected error: {e}")
         raise
 
-def generate_fallback_script(notes):
-    """Generate a sophisticated script locally using AI-like logic"""
-    import random
-    
-    # Enhanced templates with more variety
-    templates = [
-        "Hello, I'm calling as a concerned constituent about {topic}. I believe it's important that {reasoning}. I would appreciate if you could {action}. Thank you for your time and consideration.",
-        "Hi, I'm reaching out regarding {topic}. As your constituent, I feel strongly that {reasoning}. I hope you will {action}. I appreciate you taking the time to listen to my concerns.",
-        "Good day, I'm calling about {topic}. This issue matters to me because {reasoning}. I'm asking you to {action}. Thank you for your attention to this matter.",
-        "Hello, I'm a constituent calling about {topic}. I want to express my concern that {reasoning}. I'm urging you to {action}. Thank you for your service and consideration.",
-        "Hi there, I'm calling as a concerned voter about {topic}. I believe {reasoning}. I'm requesting that you {action}. I appreciate your time and look forward to your response."
-    ]
-    
-    # Enhanced keyword detection
-    topic_keywords = {
-        'climate change': ['climate', 'environment', 'global warming', 'carbon', 'renewable', 'green energy'],
-        'healthcare': ['healthcare', 'health care', 'medical', 'insurance', 'medicare', 'medicaid', 'affordable care'],
-        'education': ['education', 'school', 'student', 'teacher', 'college', 'university', 'funding'],
-        'economy': ['economy', 'economic', 'jobs', 'employment', 'business', 'tax', 'financial'],
-        'immigration': ['immigration', 'immigrant', 'border', 'citizenship', 'visa', 'asylum'],
-        'gun control': ['gun', 'firearm', 'weapon', 'safety', 'background check', 'second amendment'],
-        'infrastructure': ['infrastructure', 'roads', 'bridges', 'transportation', 'construction', 'public works'],
-        'social security': ['social security', 'retirement', 'senior', 'elderly', 'pension'],
-        'veterans': ['veteran', 'military', 'service member', 'armed forces', 'veterans affairs'],
-        'civil rights': ['civil rights', 'equality', 'discrimination', 'justice', 'fairness', 'rights']
-    }
-    
-    action_keywords = {
-        'support legislation': ['support', 'vote for', 'back', 'endorse', 'champion'],
-        'oppose legislation': ['oppose', 'vote against', 'reject', 'block', 'prevent'],
-        'consider this issue': ['consider', 'look into', 'examine', 'review', 'study'],
-        'take action': ['take action', 'act', 'do something', 'address', 'tackle'],
-        'fund this program': ['fund', 'allocate', 'budget', 'invest in', 'support funding'],
-        'investigate this': ['investigate', 'look into', 'examine', 'probe', 'study']
-    }
-    
-    reasoning_templates = [
-        "this affects our community directly",
-        "this is crucial for our future",
-        "this impacts many of your constituents",
-        "this is a matter of public safety and well-being",
-        "this is essential for our economic growth",
-        "this is important for social justice",
-        "this affects the most vulnerable among us",
-        "this is critical for environmental protection"
-    ]
-    
-    # Detect topic from notes
-    notes_lower = notes.lower()
-    detected_topic = 'this important issue'
-    
-    for topic, keywords in topic_keywords.items():
-        if any(keyword in notes_lower for keyword in keywords):
-            detected_topic = topic
-            break
-    
-    # Detect action from notes
-    detected_action = 'consider my position on this matter'
-    
-    for action, keywords in action_keywords.items():
-        if any(keyword in notes_lower for keyword in keywords):
-            detected_action = action
-            break
-    
-    # Select reasoning
-    selected_reasoning = random.choice(reasoning_templates)
-    
-    # Customize reasoning based on topic
-    if 'climate' in detected_topic or 'environment' in detected_topic:
-        selected_reasoning = "this is crucial for protecting our environment and future generations"
-    elif 'healthcare' in detected_topic:
-        selected_reasoning = "this directly impacts the health and well-being of our community"
-    elif 'education' in detected_topic:
-        selected_reasoning = "this is essential for our children's future and community development"
-    elif 'economy' in detected_topic:
-        selected_reasoning = "this affects our local economy and job opportunities"
-    
-    # Select and format template
-    template = random.choice(templates)
-    script_content = template.format(
-        topic=detected_topic,
-        reasoning=selected_reasoning,
-        action=detected_action
-    )
-    
-    # Add the standard opening line that AI scripts use
-    full_script = f"Hi, I'd like to register an opinion. My name is __ and I'm a constituent from @ZipCode.\n\n{script_content}"
-    
-    return full_script
+
 
 @app.route('/api/call-logs', methods=['POST'])
 def create_call_log():

@@ -311,6 +311,12 @@ function displayRepresentatives(representatives) {
     });
 
     container.innerHTML = html;
+    
+    // AUTO-SELECT all representatives and their phone numbers by default
+    setTimeout(() => {
+        selectAllPhones();
+        console.log('Auto-selected all representatives after loading');
+    }, 100);
 }
 
 // Add a new representative
@@ -705,7 +711,7 @@ function displayScripts(scripts) {
                     <div class="script-selection">
                         <input type="radio" name="scriptSelection" id="radio-script-${script.id}"
                                value="${script.id}" onchange="selectScriptById('${script.id}')">
-                        <label for="radio-script-${script.id}" class="script-title">${script.title}</label>
+                        <label for="radio-script-${script.id}" class="script-title" id="title-${script.id}">${script.title}</label>
                     </div>
                     <div class="script-actions">
                         <button class="btn btn-outline-primary btn-sm" onclick="toggleScriptExpand(${script.id}); event.stopPropagation();" id="toggle-${script.id}">
@@ -716,6 +722,9 @@ function displayScripts(scripts) {
                         </button>
                         <button class="btn btn-outline-danger btn-sm" onclick="event.stopPropagation(); deleteScript(${script.id})">
                             <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="duplicateScript(${script.id}); event.stopPropagation();" id="duplicate-${script.id}">
+                            <i class="fas fa-copy"></i> Duplicate
                         </button>
                     </div>
                 </div>
@@ -732,7 +741,7 @@ function displayScripts(scripts) {
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Script Content</label>
-                        <textarea class="form-control" id="edit-content-${script.id}" rows="5">${script.content}</textarea>
+                        <textarea class="form-control" id="edit-content-${script.id}" rows="8" style="min-height: 150px;">${script.content}</textarea>
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-secondary btn-sm" onclick="cancelEdit(${script.id}); event.stopPropagation();">
@@ -958,6 +967,48 @@ function updateScript(scriptId) {
     });
 }
 
+// Duplicate an existing script
+function duplicateScript(scriptId) {
+    const script = allScripts.find(s => s.id === scriptId);
+    if (!script) {
+        showAlert('Script not found', 'error');
+        return;
+    }
+    
+    // Create new script data with duplicated content
+    const duplicatedTitle = `${script.title} (Copy)`;
+    const scriptData = {
+        title: duplicatedTitle,
+        content: script.content
+    };
+    
+    fetch('/api/scripts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(scriptData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            // Add the new script to the global array
+            allScripts.push(data);
+            
+            // Refresh the scripts display
+            displayScripts(allScripts);
+            
+            showAlert('Script duplicated successfully!', 'success');
+        } else {
+            showAlert('Error duplicating script', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('Error duplicating script', 'error');
+    });
+}
+
 // Global variables for call workflow
 let selectedCallRep = null;
 let selectedCallPhone = null;
@@ -1111,6 +1162,11 @@ function saveCallLog() {
                 // Close modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('callLogModal'));
                 modal.hide();
+                
+                // FORCE display call script after logging (fallback for mobile visibility issues)
+                setTimeout(() => {
+                    forceDisplayCallScript();
+                }, 500);
                 
                 // Show success message
                 showAlert('Call logged successfully!', 'success');
@@ -1844,6 +1900,46 @@ function processScriptReferences(scriptContent, activePhone = null) {
     return processedContent;
 }
 
+// Force display call script (fallback function for mobile issues)
+function forceDisplayCallScript() {
+    console.log('Force displaying call script');
+    
+    // Find the fullScriptDisplay div
+    const fullScriptDisplay = document.getElementById('fullScriptDisplay');
+    if (!fullScriptDisplay) {
+        console.error('fullScriptDisplay not found in forceDisplayCallScript');
+        return;
+    }
+    
+    // Force visibility with multiple approaches
+    fullScriptDisplay.style.display = 'block';
+    fullScriptDisplay.style.visibility = 'visible';
+    fullScriptDisplay.style.opacity = '1';
+    fullScriptDisplay.classList.remove('d-none');
+    
+    // Find or create the alert div inside fullScriptDisplay
+    let alertDiv = fullScriptDisplay.querySelector('.alert.alert-info.script-display');
+    if (!alertDiv) {
+        // Create the alert div if it doesn't exist
+        alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info script-display';
+        alertDiv.style.border = '2px solid #17a2b8';
+        fullScriptDisplay.appendChild(alertDiv);
+    }
+    
+    // Force alert div visibility
+    alertDiv.style.display = 'block';
+    alertDiv.style.visibility = 'visible';
+    alertDiv.style.opacity = '1';
+    alertDiv.classList.remove('d-none');
+    
+    // Update the content
+    updateFullScriptDisplay();
+    
+    // Scroll to script section to ensure it's visible
+    fullScriptDisplay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 // Update full script display in Step 4
 function updateFullScriptDisplay() {
     // Update full script display
@@ -1855,8 +1951,9 @@ function updateFullScriptDisplay() {
         return;
     }
     
-    // Always ensure the script display section is visible
+    // ALWAYS ensure the script display section is visible - NEVER hide it
     fullScriptDisplay.style.display = 'block';
+    fullScriptDisplay.style.visibility = 'visible';
     
     // Find or create the alert div inside fullScriptDisplay
     let alertDiv = fullScriptDisplay.querySelector('.alert.alert-info.script-display');
@@ -1867,6 +1964,10 @@ function updateFullScriptDisplay() {
         alertDiv.style.border = '2px solid #17a2b8';
         fullScriptDisplay.appendChild(alertDiv);
     }
+    
+    // ALWAYS ensure the alert div is visible - critical for mobile
+    alertDiv.style.display = 'block';
+    alertDiv.style.visibility = 'visible';
     
     if (selectedCallScript) {
         // Get the current call from the queue for reference parameter processing
@@ -1887,13 +1988,21 @@ function updateFullScriptDisplay() {
             <h6><strong>${selectedCallScript.title}</strong></h6>
             <div class="script-content-full">${formattedContent}</div>
         `;
-        
-        // Always ensure the alert div is visible when there's a script
-        alertDiv.style.display = 'block';
     } else {
         alertDiv.innerHTML = '<p class="text-muted">Select a script above to see the content here</p>';
-        alertDiv.style.display = 'block';
     }
+    
+    // Force visibility one more time to combat any mobile browser quirks
+    setTimeout(() => {
+        if (fullScriptDisplay) {
+            fullScriptDisplay.style.display = 'block';
+            fullScriptDisplay.style.visibility = 'visible';
+        }
+        if (alertDiv) {
+            alertDiv.style.display = 'block';
+            alertDiv.style.visibility = 'visible';
+        }
+    }, 100);
 }
 
 // Update call button and workflow status
@@ -2451,8 +2560,8 @@ function startCurrentCall() {
         phoneInSelected.status = 'active';
     }
     
-    // Ensure script display is maintained
-    updateFullScriptDisplay();
+    // FORCE display call script (fallback #1) - ensure it's always visible when starting call
+    forceDisplayCallScript();
     
     updateNextCallWorkflow();
     updateCallInfo(); // Update the main rep list to show real-time status
@@ -2627,6 +2736,11 @@ function saveCallLogStreamlined() {
             // Close modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('callLogModal'));
             modal.hide();
+            
+            // FORCE display call script after logging (fallback for mobile visibility issues)
+            setTimeout(() => {
+                forceDisplayCallScript();
+            }, 500);
             
             // Show success message
             showAlert('Call logged successfully!', 'success');

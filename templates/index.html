@@ -234,7 +234,7 @@
                                                 </div>
                                             </div>
                                             <div class="mb-3">
-                                                <textarea class="form-control" id="scriptContent" rows="5" placeholder="Enter your call script here..."></textarea>
+                                                <textarea class="form-control" id="scriptContent" rows="10" placeholder="Enter your call script here..." style="min-height: 200px;"></textarea>
                                                 <small class="text-muted mt-1 d-block">
                                                     <i class="fas fa-info-circle me-1"></i>
                                                     You can use these reference parameters: <code>@RepType</code> (Representative/Senator), <code>@LastName</code> (representative's last name), <code>@ZipCode</code> (your zip code)
@@ -286,7 +286,7 @@
                                         <div class="row">
                                             <div class="col-12">
                                                 <div class="full-script-display" id="fullScriptDisplay">
-                                                    <h6><i class="fas fa-file-alt me-2"></i>Your Call Script</h6>
+                                                    <h6 style="cursor: pointer;" onclick="forceDisplayCallScript()" title="Click to force display call script if hidden"><i class="fas fa-file-alt me-2"></i>Your Call Script <small class="text-muted">(click if hidden)</small></h6>
                                                 </div>
                                             </div>
                                         </div>
@@ -696,7 +696,7 @@
     <div class="version-footer">
         <div class="container">
             <div class="text-center text-muted">
-                <small>Version 1.0.0 • A WAT Production</small>
+                <small>Version 1.1.0 • A WAT Production</small>
             </div>
         </div>
     </div>
